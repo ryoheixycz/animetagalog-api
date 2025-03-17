@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0'; // This ensures binding to all network interfaces
 
 // Middleware
 app.use(cors());
@@ -372,8 +373,8 @@ app.post('/api/anime', async (req, res) => {
   }
 });
 
-// Add new episode
-app.post('/api/episodes', (req, res) => {
+// Add new episode - simplified to only require animeId and server URLs
+app.post('/api/episodes', async (req, res) => {
   const episodes = readData(EPISODES_FILE);
   const customAnimeList = readData(CUSTOM_ANIME_FILE);
   
@@ -384,11 +385,20 @@ app.post('/api/episodes', (req, res) => {
     return res.status(404).json({ error: 'Anime not found in our list' });
   }
   
+  // Get existing episodes to determine the next episode number
+  const existingEpisodes = episodes.filter(e => e.animeId === req.body.animeId);
+  const nextEpisodeNumber = existingEpisodes.length > 0 
+    ? Math.max(...existingEpisodes.map(e => e.number)) + 1 
+    : 1;
+  
+  // Auto-generate episode title
+  const episodeTitle = `Episode ${nextEpisodeNumber}`;
+  
   const newEpisode = {
     id: Date.now().toString(),
     animeId: req.body.animeId,
-    title: req.body.title || `Episode ${req.body.number}`,
-    number: req.body.number || 1,
+    title: episodeTitle,
+    number: nextEpisodeNumber,
     iframeSrc: req.body.iframeSrc || "",
     server2Url: req.body.server2Url || "",
     dateAdded: new Date().toISOString()
@@ -518,9 +528,9 @@ app.get('*', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`API Documentation: http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
+  console.log(`API Documentation: http://${HOST}:${PORT}`);
 });
 
 // Handle errors gracefully
