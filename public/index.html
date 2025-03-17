@@ -378,20 +378,13 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Simplified Episode Form -->
                                 <div class="card mt-3">
                                     <div class="card-header">
                                         Add New Episode
                                     </div>
                                     <div class="card-body">
                                         <form id="addEpisodeForm">
-                                            <div class="mb-3">
-                                                <label for="episodeNumber" class="form-label">Episode Number</label>
-                                                <input type="number" class="form-control" id="episodeNumber" min="1" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="episodeTitle" class="form-label">Episode Title</label>
-                                                <input type="text" class="form-control" id="episodeTitle">
-                                            </div>
                                             <div class="mb-3">
                                                 <label for="iframeSrc" class="form-label">iFrame Source (optional)</label>
                                                 <input type="text" class="form-control" id="iframeSrc">
@@ -439,14 +432,7 @@
                 <div class="modal-body">
                     <form id="editEpisodeForm">
                         <input type="hidden" id="editEpisodeId">
-                        <div class="mb-3">
-                            <label for="editEpisodeNumber" class="form-label">Episode Number</label>
-                            <input type="number" class="form-control" id="editEpisodeNumber" min="1" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editEpisodeTitle" class="form-label">Episode Title</label>
-                            <input type="text" class="form-control" id="editEpisodeTitle">
-                        </div>
+                        <!-- Simplified Edit Form -->
                         <div class="mb-3">
                             <label for="editIframeSrc" class="form-label">iFrame Source (optional)</label>
                             <input type="text" class="form-control" id="editIframeSrc">
@@ -697,689 +683,689 @@
                         );
                         
                         Promise.all(animePromises)
-    .then(results => {
-        results.forEach(result => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>Episode</td>
-                <td>${result.anime.title} - Ep ${result.episode.number}: ${result.episode.title || 'Untitled'}</td>
-                <td>${new Date(result.episode.dateAdded).toLocaleDateString()}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary view-episode-btn" 
-                        data-anime-id="${result.episode.animeId}" 
-                        data-episode-id="${result.episode.id}">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                </td>
-            `;
-            updatesTableBody.appendChild(row);
+                            .then(results => {
+                                results.forEach(result => {
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td>Episode</td>
+                                        <td>${result.anime.title} - Ep ${result.episode.number}: ${result.episode.title || 'Untitled'}</td>
+                                        <td>${new Date(result.episode.dateAdded).toLocaleDateString()}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary view-episode-btn" 
+                                                data-anime-id="${result.episode.animeId}" 
+                                                data-episode-id="${result.episode.id}">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    `;
+                                    updatesTableBody.appendChild(row);
+                                });
+                                
+                                // Add event listeners to view buttons
+                                document.querySelectorAll('.view-episode-btn').forEach(button => {
+                                    button.addEventListener('click', function() {
+                                        const animeId = this.getAttribute('data-anime-id');
+                                        
+                                        // Switch to episodes view
+                                        showView('episodes-view');
+                                        document.getElementById('episodes-link').classList.add('active');
+                                        document.getElementById('dashboard-link').classList.remove('active');
+                                        document.getElementById('anime-link').classList.remove('active');
+                                        document.getElementById('add-anime-link').classList.remove('active');
+                                        
+                                        // Load anime for episodes
+                                        loadAnimeForEpisodes(animeId);
+                                    });
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error loading episode details:', error);
+                                updatesTableBody.innerHTML = `
+                                    <tr>
+                                        <td colspan="4" class="text-center text-danger">Error loading episode details</td>
+                                    </tr>
+                                `;
+                            });
+                    }
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading dashboard data:', error);
+                    showError('Failed to load dashboard data: ' + error.message);
+                    hideLoading();
+                });
+        }
+        
+        // Load anime list for the library view
+        function loadAnimeList() {
+            showLoading();
+            
+            fetch(`${API_URL}/anime`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch anime list');
+                    }
+                    return response.json();
+                })
+                .then(animeList => {
+                    const animeListContainer = document.getElementById('anime-list');
+                    animeListContainer.innerHTML = '';
+                    
+                    if (animeList.length === 0) {
+                        animeListContainer.innerHTML = `
+                            <div class="col-12 text-center">
+                                <p class="text-muted">No anime found. Add some to get started!</p>
+                            </div>
+                        `;
+                    } else {
+                        animeList.forEach(anime => {
+                            const card = document.createElement('div');
+                            card.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+                            card.innerHTML = `
+                                <div class="card h-100 anime-card" data-anime-id="${anime.id}">
+                                    <img src="${anime.thumbnail}" class="card-img-top anime-thumbnail" alt="${anime.title}" onerror="this.src='https://via.placeholder.com/350x500?text=No+Image'">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${anime.title}</h5>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            ${anime.genres.slice(0, 3).map(genre => 
+                                                `<span class="badge bg-secondary">${genre}</span>`
+                                            ).join('')}
+                                        </div>
+                                        <p class="card-text small">${anime.description ? anime.description.substring(0, 100) + '...' : 'No description available'}</p>
+                                    </div>
+                                    <div class="card-footer d-flex justify-content-between">
+                                        <small class="text-muted">${anime.episodeCount} episodes</small>
+                                        <button class="btn btn-sm btn-primary manage-episodes-btn" data-anime-id="${anime.id}">
+                                            Manage Episodes
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            animeListContainer.appendChild(card);
+                        });
+                        
+                        // Add event listeners to manage episodes buttons
+                        document.querySelectorAll('.manage-episodes-btn').forEach(button => {
+                            button.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const animeId = this.getAttribute('data-anime-id');
+                                
+                                // Switch to episodes view
+                                showView('episodes-view');
+                                document.getElementById('episodes-link').classList.add('active');
+                                document.getElementById('dashboard-link').classList.remove('active');
+                                document.getElementById('anime-link').classList.remove('active');
+                                document.getElementById('add-anime-link').classList.remove('active');
+                                
+                                // Load anime for episodes
+                                loadAnimeForEpisodes(animeId);
+                            });
+                        });
+                    }
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading anime list:', error);
+                    showError('Failed to load anime list: ' + error.message);
+                    hideLoading();
+                });
+        }
+        
+        // Search functionality for AniList
+        const animeSearchInput = document.getElementById('animeSearch');
+        const searchResultsContainer = document.getElementById('searchResults');
+        
+        animeSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.trim();
+            
+            if (searchTerm.length < 3) {
+                searchResultsContainer.style.display = 'none';
+                return;
+            }
+            
+            showLoading();
+            // Search AniList API
+            fetch(`${API_URL}/search?query=${encodeURIComponent(searchTerm)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Search failed');
+                    }
+                    return response.json();
+                })
+                .then(results => {
+                    searchResultsContainer.innerHTML = '';
+                    
+                    if (results.length === 0) {
+                        searchResultsContainer.innerHTML = `
+                            <div class="search-result-item text-center">
+                                No results found for "${searchTerm}"
+                            </div>
+                        `;
+                    } else {
+                        results.forEach(anime => {
+                            const resultItem = document.createElement('div');
+                            resultItem.className = 'search-result-item';
+                            resultItem.setAttribute('data-anime-id', anime.id);
+                            resultItem.innerHTML = `
+                                <div class="d-flex align-items-center">
+                                    <img src="${anime.thumbnail}" alt="${anime.title}" class="me-3" style="width: 50px; height: 70px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/50x70?text=No+Image'">
+                                    <div>
+                                        <div class="fw-bold">${anime.title}</div>
+                                        <small class="text-muted">${anime.episodeCount} eps · ${anime.status}</small>
+                                    </div>
+                                </div>
+                            `;
+                            searchResultsContainer.appendChild(resultItem);
+                            
+                            resultItem.addEventListener('click', function() {
+                                displaySelectedAnime(anime);
+                                searchResultsContainer.style.display = 'none';
+                                animeSearchInput.value = anime.title;
+                            });
+                        });
+                    }
+                    
+                    searchResultsContainer.style.display = 'block';
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error searching anime:', error);
+                    searchResultsContainer.innerHTML = `
+                        <div class="search-result-item text-center text-danger">
+                            Error searching. Please try again.
+                        </div>
+                    `;
+                    searchResultsContainer.style.display = 'block';
+                    hideLoading();
+                });
         });
         
-        // Add event listeners to view buttons
-        document.querySelectorAll('.view-episode-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const animeId = this.getAttribute('data-anime-id');
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!animeSearchInput.contains(e.target) && !searchResultsContainer.contains(e.target)) {
+                searchResultsContainer.style.display = 'none';
+            }
+        });
+        
+        // Display selected anime details
+        function displaySelectedAnime(anime) {
+            const detailsContainer = document.getElementById('selectedAnimeDetails');
+            const thumbnailElement = document.getElementById('selectedAnimeThumbnail');
+            const titleElement = document.getElementById('selectedAnimeTitle');
+            const descriptionElement = document.getElementById('selectedAnimeDescription');
+            const genresContainer = document.getElementById('selectedAnimeGenres');
+            const episodesElement = document.getElementById('selectedAnimeEpisodes');
+            const statusElement = document.getElementById('selectedAnimeStatus');
+            const seasonElement = document.getElementById('selectedAnimeSeason');
+            const ratingElement = document.getElementById('selectedAnimeRating');
+            
+            thumbnailElement.src = anime.thumbnail;
+            thumbnailElement.onerror = function() {
+                this.src = 'https://via.placeholder.com/350x500?text=No+Image';
+            };
+            
+            titleElement.textContent = anime.title;
+            descriptionElement.textContent = anime.description || 'No description available';
+            
+            genresContainer.innerHTML = '';
+            anime.genres.forEach(genre => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-secondary';
+                badge.textContent = genre;
+                genresContainer.appendChild(badge);
+            });
+            
+            episodesElement.textContent = anime.episodeCount || 'Unknown';
+            statusElement.textContent = anime.status || 'Unknown';
+            seasonElement.textContent = anime.season ? `${anime.season} ${anime.startDate?.split('-')[0] || ''}` : 'Unknown';
+            ratingElement.textContent = anime.rating ? `${anime.rating}/10` : 'N/A';
+            
+            detailsContainer.style.display = 'block';
+            
+            // Add event listener to add anime button
+            document.getElementById('addSelectedAnime').setAttribute('data-anime-id', anime.id);
+        }
+        
+        // Add selected anime to library
+        document.getElementById('addSelectedAnime').addEventListener('click', function() {
+            const animeId = this.getAttribute('data-anime-id');
+            
+            if (!animeId) {
+                showError('No anime selected');
+                return;
+            }
+            
+            showLoading();
+            fetch(`${API_URL}/anime`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ anilistId: animeId })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(error => Promise.reject(error));
+                }
+                return response.json();
+            })
+            .then(newAnime => {
+                showSuccess(`Successfully added "${newAnime.title}" to your library`);
                 
-                // Switch to episodes view
+                // Switch to episodes view to add episodes
                 showView('episodes-view');
                 document.getElementById('episodes-link').classList.add('active');
                 document.getElementById('dashboard-link').classList.remove('active');
                 document.getElementById('anime-link').classList.remove('active');
                 document.getElementById('add-anime-link').classList.remove('active');
                 
-                // Load anime for episodes
+                // Load anime for episodes and select the newly added one
                 loadAnimeForEpisodes(animeId);
+                
+                // Clear search
+                document.getElementById('animeSearch').value = '';
+                document.getElementById('selectedAnimeDetails').style.display = 'none';
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('Error adding anime:', error);
+                showError(error.error || 'Failed to add anime');
+                hideLoading();
             });
         });
-    })
-    .catch(error => {
-        console.error('Error loading episode details:', error);
-        updatesTableBody.innerHTML = `
-            <tr>
-                <td colspan="4" class="text-center text-danger">Error loading episode details</td>
-            </tr>
-        `;
-    });
-}
-
-hideLoading();
-})
-.catch(error => {
-    console.error('Error loading dashboard data:', error);
-    showError('Failed to load dashboard data: ' + error.message);
-    hideLoading();
-});
-}
-
-// Load anime list for the library view
-function loadAnimeList() {
-    showLoading();
-    
-    fetch(`${API_URL}/anime`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to fetch anime list');
-            }
-            return response.json();
-        })
-        .then(animeList => {
-            const animeListContainer = document.getElementById('anime-list');
-            animeListContainer.innerHTML = '';
-            
-            if (animeList.length === 0) {
-                animeListContainer.innerHTML = `
-                    <div class="col-12 text-center">
-                        <p class="text-muted">No anime found. Add some to get started!</p>
-                    </div>
-                `;
-            } else {
-                animeList.forEach(anime => {
-                    const card = document.createElement('div');
-                    card.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
-                    card.innerHTML = `
-                        <div class="card h-100 anime-card" data-anime-id="${anime.id}">
-                            <img src="${anime.thumbnail}" class="card-img-top anime-thumbnail" alt="${anime.title}" onerror="this.src='https://via.placeholder.com/350x500?text=No+Image'">
-                            <div class="card-body">
-                                <h5 class="card-title">${anime.title}</h5>
-                                <div class="d-flex flex-wrap gap-1 mb-2">
-                                    ${anime.genres.slice(0, 3).map(genre => 
-                                        `<span class="badge bg-secondary">${genre}</span>`
-                                    ).join('')}
-                                </div>
-                                <p class="card-text small">${anime.description ? anime.description.substring(0, 100) + '...' : 'No description available'}</p>
-                            </div>
-                            <div class="card-footer d-flex justify-content-between">
-                                <small class="text-muted">${anime.episodeCount} episodes</small>
-                                <button class="btn btn-sm btn-primary manage-episodes-btn" data-anime-id="${anime.id}">
-                                    Manage Episodes
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    animeListContainer.appendChild(card);
-                });
-                
-                // Add event listeners to manage episodes buttons
-                document.querySelectorAll('.manage-episodes-btn').forEach(button => {
-                    button.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const animeId = this.getAttribute('data-anime-id');
-                        
-                        // Switch to episodes view
-                        showView('episodes-view');
-                        document.getElementById('episodes-link').classList.add('active');
-                        document.getElementById('dashboard-link').classList.remove('active');
-                        document.getElementById('anime-link').classList.remove('active');
-                        document.getElementById('add-anime-link').classList.remove('active');
-                        
-                        // Load anime for episodes
-                        loadAnimeForEpisodes(animeId);
-                    });
-                });
-            }
-            
-            hideLoading();
-        })
-        .catch(error => {
-            console.error('Error loading anime list:', error);
-            showError('Failed to load anime list: ' + error.message);
-            hideLoading();
-        });
-}
-
-// Search functionality for AniList
-const animeSearchInput = document.getElementById('animeSearch');
-const searchResultsContainer = document.getElementById('searchResults');
-
-animeSearchInput.addEventListener('input', function() {
-    const searchTerm = this.value.trim();
-    
-    if (searchTerm.length < 3) {
-        searchResultsContainer.style.display = 'none';
-        return;
-    }
-    
-    showLoading();
-    // Search AniList API
-    fetch(`${API_URL}/search?query=${encodeURIComponent(searchTerm)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Search failed');
-            }
-            return response.json();
-        })
-        .then(results => {
-            searchResultsContainer.innerHTML = '';
-            
-            if (results.length === 0) {
-                searchResultsContainer.innerHTML = `
-                    <div class="search-result-item text-center">
-                        No results found for "${searchTerm}"
-                    </div>
-                `;
-            } else {
-                results.forEach(anime => {
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'search-result-item';
-                    resultItem.setAttribute('data-anime-id', anime.id);
-                    resultItem.innerHTML = `
-                        <div class="d-flex align-items-center">
-                            <img src="${anime.thumbnail}" alt="${anime.title}" class="me-3" style="width: 50px; height: 70px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/50x70?text=No+Image'">
-                            <div>
-                                <div class="fw-bold">${anime.title}</div>
-                                <small class="text-muted">${anime.episodeCount} eps · ${anime.status}</small>
-                            </div>
-                        </div>
-                    `;
-                    searchResultsContainer.appendChild(resultItem);
-                    
-                    resultItem.addEventListener('click', function() {
-                        displaySelectedAnime(anime);
-                        searchResultsContainer.style.display = 'none';
-                        animeSearchInput.value = anime.title;
-                    });
-                });
-            }
-            
-            searchResultsContainer.style.display = 'block';
-            hideLoading();
-        })
-        .catch(error => {
-            console.error('Error searching anime:', error);
-            searchResultsContainer.innerHTML = `
-                <div class="search-result-item text-center text-danger">
-                    Error searching. Please try again.
-                </div>
-            `;
-            searchResultsContainer.style.display = 'block';
-            hideLoading();
-        });
-});
-
-// Hide search results when clicking outside
-document.addEventListener('click', function(e) {
-    if (!animeSearchInput.contains(e.target) && !searchResultsContainer.contains(e.target)) {
-        searchResultsContainer.style.display = 'none';
-    }
-});
-
-// Display selected anime details
-function displaySelectedAnime(anime) {
-    const detailsContainer = document.getElementById('selectedAnimeDetails');
-    const thumbnailElement = document.getElementById('selectedAnimeThumbnail');
-    const titleElement = document.getElementById('selectedAnimeTitle');
-    const descriptionElement = document.getElementById('selectedAnimeDescription');
-    const genresContainer = document.getElementById('selectedAnimeGenres');
-    const episodesElement = document.getElementById('selectedAnimeEpisodes');
-    const statusElement = document.getElementById('selectedAnimeStatus');
-    const seasonElement = document.getElementById('selectedAnimeSeason');
-    const ratingElement = document.getElementById('selectedAnimeRating');
-    
-    thumbnailElement.src = anime.thumbnail;
-    thumbnailElement.onerror = function() {
-        this.src = 'https://via.placeholder.com/350x500?text=No+Image';
-    };
-    
-    titleElement.textContent = anime.title;
-    descriptionElement.textContent = anime.description || 'No description available';
-    
-    genresContainer.innerHTML = '';
-    anime.genres.forEach(genre => {
-        const badge = document.createElement('span');
-        badge.className = 'badge bg-secondary';
-        badge.textContent = genre;
-        genresContainer.appendChild(badge);
-    });
-    
-    episodesElement.textContent = anime.episodeCount || 'Unknown';
-    statusElement.textContent = anime.status || 'Unknown';
-    seasonElement.textContent = anime.season ? `${anime.season} ${anime.startDate?.split('-')[0] || ''}` : 'Unknown';
-    ratingElement.textContent = anime.rating ? `${anime.rating}/10` : 'N/A';
-    
-    detailsContainer.style.display = 'block';
-    
-    // Add event listener to add anime button
-    document.getElementById('addSelectedAnime').setAttribute('data-anime-id', anime.id);
-}
-
-// Add selected anime to library
-document.getElementById('addSelectedAnime').addEventListener('click', function() {
-    const animeId = this.getAttribute('data-anime-id');
-    
-    if (!animeId) {
-        showError('No anime selected');
-        return;
-    }
-    
-    showLoading();
-    fetch(`${API_URL}/anime`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ anilistId: animeId })
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(error => Promise.reject(error));
-        }
-        return response.json();
-    })
-    .then(newAnime => {
-        showSuccess(`Successfully added "${newAnime.title}" to your library`);
         
-        // Switch to episodes view to add episodes
-        showView('episodes-view');
-        document.getElementById('episodes-link').classList.add('active');
-        document.getElementById('dashboard-link').classList.remove('active');
-        document.getElementById('anime-link').classList.remove('active');
-        document.getElementById('add-anime-link').classList.remove('active');
-        
-        // Load anime for episodes and select the newly added one
-        loadAnimeForEpisodes(animeId);
-        
-        // Clear search
-        document.getElementById('animeSearch').value = '';
-        document.getElementById('selectedAnimeDetails').style.display = 'none';
-        hideLoading();
-    })
-    .catch(error => {
-        console.error('Error adding anime:', error);
-        showError(error.error || 'Failed to add anime');
-        hideLoading();
-    });
-});
-
-// Load anime list for episodes view
-function loadAnimeForEpisodes(selectedAnimeId = null) {
-    showLoading();
-    fetch(`${API_URL}/anime`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to fetch anime list');
-            }
-            return response.json();
-        })
-        .then(animeList => {
-            const animeSelector = document.getElementById('episodeAnimeSelector');
-            animeSelector.innerHTML = '<option value="">Choose an anime...</option>';
-            
-            animeList.forEach(anime => {
-                const option = document.createElement('option');
-                option.value = anime.id;
-                option.textContent = anime.title;
-                
-                if (selectedAnimeId && anime.id === selectedAnimeId) {
-                    option.selected = true;
-                }
-                
-                animeSelector.appendChild(option);
-            });
-            
-            if (selectedAnimeId) {
-                // Trigger change event to load episodes
-                const event = new Event('change');
-                animeSelector.dispatchEvent(event);
-            }
-            
-            hideLoading();
-        })
-        .catch(error => {
-            console.error('Error loading anime for episodes:', error);
-            showError('Failed to load anime list: ' + error.message);
-            hideLoading();
-        });
-}
-
-// Handle anime selection for episodes
-document.getElementById('episodeAnimeSelector').addEventListener('change', function() {
-    const animeId = this.value;
-    const episodeManagementArea = document.getElementById('episodeManagementArea');
-    
-    if (!animeId) {
-        episodeManagementArea.style.display = 'none';
-        return;
-    }
-    
-    showLoading();
-    fetch(`${API_URL}/anime/${animeId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to fetch anime details');
-            }
-            return response.json();
-        })
-        .then(anime => {
-            // Display anime details
-            const thumbnailElement = document.getElementById('episodeAnimeThumbnail');
-            thumbnailElement.src = anime.thumbnail;
-            thumbnailElement.onerror = function() {
-                this.src = 'https://via.placeholder.com/350x500?text=No+Image';
-            };
-            
-            document.getElementById('episodeAnimeTitle').textContent = anime.title;
-            document.getElementById('episodeAnimeEpisodeCount').textContent = `${anime.episodeCount} episodes`;
-            
-            // Load episodes for this anime
-            return fetch(`${API_URL}/anime/${animeId}/episodes`)
+        // Load anime list for episodes view
+        function loadAnimeForEpisodes(selectedAnimeId = null) {
+            showLoading();
+            fetch(`${API_URL}/anime`)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Failed to fetch episodes');
+                        throw new Error('Failed to fetch anime list');
                     }
                     return response.json();
                 })
-                .then(episodes => {
-                    displayEpisodes(episodes, anime);
-                    episodeManagementArea.style.display = 'block';
+                .then(animeList => {
+                    const animeSelector = document.getElementById('episodeAnimeSelector');
+                    animeSelector.innerHTML = '<option value="">Choose an anime...</option>';
+                    
+                    animeList.forEach(anime => {
+                        const option = document.createElement('option');
+                        option.value = anime.id;
+                        option.textContent = anime.title;
+                        
+                        if (selectedAnimeId && anime.id === selectedAnimeId) {
+                            option.selected = true;
+                        }
+                        
+                        animeSelector.appendChild(option);
+                    });
+                    
+                    if (selectedAnimeId) {
+                        // Trigger change event to load episodes
+                        const event = new Event('change');
+                        animeSelector.dispatchEvent(event);
+                    }
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading anime for episodes:', error);
+                    showError('Failed to load anime list: ' + error.message);
                     hideLoading();
                 });
-        })
-        .catch(error => {
-            console.error('Error loading anime details:', error);
-            showError('Failed to load anime details: ' + error.message);
-            hideLoading();
-        });
-});
-
-// Display episodes list
-function displayEpisodes(episodes, anime) {
-    const episodesContainer = document.getElementById('episodesList');
-    episodesContainer.innerHTML = '';
-    
-    if (episodes.length === 0) {
-        episodesContainer.innerHTML = `
-            <div class="text-center py-3">
-                <p class="text-muted">No episodes added yet. Add your first episode!</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Sort episodes by number
-    episodes.sort((a, b) => a.number - b.number);
-    
-    episodes.forEach(episode => {
-        const episodeItem = document.createElement('div');
-        episodeItem.className = 'episode-item';
-        episodeItem.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>Episode ${episode.number}: ${episode.title || 'Untitled'}</strong>
-                    <div class="text-muted small">Added: ${new Date(episode.dateAdded).toLocaleDateString()}</div>
-                </div>
-                <div>
-                    <button class="btn btn-sm btn-outline-primary edit-episode-btn" data-episode-id="${episode.id}">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger delete-episode-btn" data-episode-id="${episode.id}" data-episode-number="${episode.number}" data-episode-title="${episode.title || 'Untitled'}">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="mt-2">
-                <small class="text-muted">Server URL: ${episode.server2Url.substring(0, 50)}${episode.server2Url.length > 50 ? '...' : ''}</small>
-            </div>
-        `;
-        episodesContainer.appendChild(episodeItem);
-    });
-    
-    // Add event listeners to edit buttons
-    document.querySelectorAll('.edit-episode-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const episodeId = this.getAttribute('data-episode-id');
-            openEditEpisodeModal(episodeId);
-        });
-    });
-    
-    // Add event listeners to delete buttons
-    document.querySelectorAll('.delete-episode-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const episodeId = this.getAttribute('data-episode-id');
-            const episodeNumber = this.getAttribute('data-episode-number');
-            const episodeTitle = this.getAttribute('data-episode-title');
-            
-            // Set modal info
-            document.getElementById('deleteEpisodeInfo').textContent = 
-                `${anime.title} - Episode ${episodeNumber}: ${episodeTitle}`;
-            
-            // Set delete button data
-            document.getElementById('confirmDeleteEpisodeBtn').setAttribute('data-episode-id', episodeId);
-            
-            // Show modal
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteEpisodeModal'));
-            deleteModal.show();
-        });
-    });
-}
-
-           // Add episode form submission
-document.getElementById('addEpisodeForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const animeId = document.getElementById('episodeAnimeSelector').value;
-    const episodeNumber = document.getElementById('episodeNumber').value;
-    const episodeTitle = document.getElementById('episodeTitle').value;
-    const iframeSrc = document.getElementById('iframeSrc').value;
-    const server2Url = document.getElementById('server2Url').value;
-    
-    if (!animeId) {
-        showError('Please select an anime');
-        return;
-    }
-    
-    const episodeData = {
-        animeId: animeId,
-        number: parseInt(episodeNumber, 10),
-        title: episodeTitle || `Episode ${episodeNumber}`,
-        iframeSrc: iframeSrc || '',
-        server2Url: server2Url
-    };
-    
-    showLoading();
-    fetch(`${API_URL}/episodes`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(episodeData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(error => Promise.reject(error));
         }
-        return response.json();
-    })
-    .then(newEpisode => {
-        // Reset form
-        document.getElementById('addEpisodeForm').reset();
         
-        // Show success message
-        showSuccess(`Episode ${newEpisode.number} added successfully`);
-        
-        // Reload episodes
-        return fetch(`${API_URL}/anime/${animeId}/episodes`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch episodes');
-                }
-                return response.json();
-            })
-            .then(episodes => {
-                return fetch(`${API_URL}/anime/${animeId}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch anime details');
-                        }
-                        return response.json();
-                    })
-                    .then(anime => {
-                        displayEpisodes(episodes, anime);
-                        hideLoading();
-                    });
-            });
-    })
-    .catch(error => {
-        console.error('Error adding episode:', error);
-        showError(error.error || 'Failed to add episode');
-        hideLoading();
-    });
-});
-
-// Open edit episode modal
-function openEditEpisodeModal(episodeId) {
-    showLoading();
-    fetch(`${API_URL}/episodes/${episodeId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to fetch episode details');
+        // Handle anime selection for episodes
+        document.getElementById('episodeAnimeSelector').addEventListener('change', function() {
+            const animeId = this.value;
+            const episodeManagementArea = document.getElementById('episodeManagementArea');
+            
+            if (!animeId) {
+                episodeManagementArea.style.display = 'none';
+                return;
             }
-            return response.json();
-        })
-        .then(episode => {
-            // Populate form
-            document.getElementById('editEpisodeId').value = episode.id;
-            document.getElementById('editEpisodeNumber').value = episode.number;
-            document.getElementById('editEpisodeTitle').value = episode.title || '';
-            document.getElementById('editIframeSrc').value = episode.iframeSrc || '';
-            document.getElementById('editServer2Url').value = episode.server2Url || '';
             
-            // Show modal
-            const editModal = new bootstrap.Modal(document.getElementById('editEpisodeModal'));
-            editModal.show();
-            
-            hideLoading();
-        })
-        .catch(error => {
-            console.error('Error fetching episode details:', error);
-            showError('Failed to load episode details: ' + error.message);
-            hideLoading();
+            showLoading();
+            fetch(`${API_URL}/anime/${animeId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch anime details');
+                    }
+                    return response.json();
+                })
+                .then(anime => {
+                    // Display anime details
+                    const thumbnailElement = document.getElementById('episodeAnimeThumbnail');
+                    thumbnailElement.src = anime.thumbnail;
+                    thumbnailElement.onerror = function() {
+                        this.src = 'https://via.placeholder.com/350x500?text=No+Image';
+                    };
+                    
+                    document.getElementById('episodeAnimeTitle').textContent = anime.title;
+                    document.getElementById('episodeAnimeEpisodeCount').textContent = `${anime.episodeCount} episodes`;
+                    
+                    // Load episodes for this anime
+                    return fetch(`${API_URL}/anime/${animeId}/episodes`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Failed to fetch episodes');
+                            }
+                            return response.json();
+                        })
+                        .then(episodes => {
+                            displayEpisodes(episodes, anime);
+                            episodeManagementArea.style.display = 'block';
+                            hideLoading();
+                        });
+                })
+                .catch(error => {
+                    console.error('Error loading anime details:', error);
+                    showError('Failed to load anime details: ' + error.message);
+                    hideLoading();
+                });
         });
-}
-
-// Save edited episode
-document.getElementById('saveEditEpisodeBtn').addEventListener('click', function() {
-    const episodeId = document.getElementById('editEpisodeId').value;
-    const episodeNumber = document.getElementById('editEpisodeNumber').value;
-    const episodeTitle = document.getElementById('editEpisodeTitle').value;
-    const iframeSrc = document.getElementById('editIframeSrc').value;
-    const server2Url = document.getElementById('editServer2Url').value;
-    
-    const episodeData = {
-        number: parseInt(episodeNumber, 10),
-        title: episodeTitle || `Episode ${episodeNumber}`,
-        iframeSrc: iframeSrc || '',
-        server2Url: server2Url
-    };
-    
-    showLoading();
-    fetch(`${API_URL}/episodes/${episodeId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(episodeData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(error => Promise.reject(error));
+        
+        // Display episodes list
+        function displayEpisodes(episodes, anime) {
+            const episodesContainer = document.getElementById('episodesList');
+            episodesContainer.innerHTML = '';
+            
+            if (episodes.length === 0) {
+                episodesContainer.innerHTML = `
+                    <div class="text-center py-3">
+                        <p class="text-muted">No episodes added yet. Add your first episode!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort episodes by number
+            episodes.sort((a, b) => a.number - b.number);
+            
+            episodes.forEach(episode => {
+                const episodeItem = document.createElement('div');
+                episodeItem.className = 'episode-item';
+                episodeItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Episode ${episode.number}: ${episode.title || 'Untitled'}</strong>
+                            <div class="text-muted small">Added: ${new Date(episode.dateAdded).toLocaleDateString()}</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary edit-episode-btn" data-episode-id="${episode.id}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-episode-btn" data-episode-id="${episode.id}" data-episode-number="${episode.number}" data-episode-title="${episode.title || 'Untitled'}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Server URL: ${episode.server2Url.substring(0, 50)}${episode.server2Url.length > 50 ? '...' : ''}</small>
+                    </div>
+                `;
+                episodesContainer.appendChild(episodeItem);
+            });
+            
+            // Add event listeners to edit buttons
+            document.querySelectorAll('.edit-episode-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const episodeId = this.getAttribute('data-episode-id');
+                    openEditEpisodeModal(episodeId);
+                });
+            });
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-episode-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const episodeId = this.getAttribute('data-episode-id');
+                    const episodeNumber = this.getAttribute('data-episode-number');
+                    const episodeTitle = this.getAttribute('data-episode-title');
+                    
+                    // Set modal info
+                    document.getElementById('deleteEpisodeInfo').textContent = 
+                        `${anime.title} - Episode ${episodeNumber}: ${episodeTitle}`;
+                    
+                    // Set delete button data
+                    document.getElementById('confirmDeleteEpisodeBtn').setAttribute('data-episode-id', episodeId);
+                    
+                    // Show modal
+                    const deleteModal = new bootstrap.Modal(document.getElementById('deleteEpisodeModal'));
+                    deleteModal.show();
+                });
+            });
         }
-        return response.json();
-    })
-    .then(updatedEpisode => {
-        // Close modal
-        const editModal = bootstrap.Modal.getInstance(document.getElementById('editEpisodeModal'));
-        editModal.hide();
         
-        // Show success message
-        showSuccess(`Episode ${updatedEpisode.number} updated successfully`);
-        
-        // Reload episodes
-        const animeId = document.getElementById('episodeAnimeSelector').value;
-        return fetch(`${API_URL}/anime/${animeId}/episodes`)
+        // Add episode form submission - simplified
+        document.getElementById('addEpisodeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const animeId = document.getElementById('episodeAnimeSelector').value;
+            const iframeSrc = document.getElementById('iframeSrc').value;
+            const server2Url = document.getElementById('server2Url').value;
+            
+            if (!animeId) {
+                showError('Please select an anime');
+                return;
+            }
+            
+            if (!server2Url) {
+                showError('Server 2 URL is required');
+                return;
+            }
+            
+            const episodeData = {
+                animeId: animeId,
+                iframeSrc: iframeSrc || '',
+                server2Url: server2Url
+            };
+            
+            showLoading();
+            fetch(`${API_URL}/episodes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(episodeData)
+            })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to fetch episodes');
+                    return response.json().then(error => Promise.reject(error));
                 }
                 return response.json();
             })
-            .then(episodes => {
-                return fetch(`${API_URL}/anime/${animeId}`)
+            .then(newEpisode => {
+                // Reset form
+                document.getElementById('addEpisodeForm').reset();
+                
+                // Show success message
+                showSuccess(`Episode ${newEpisode.number} added successfully`);
+                
+                // Reload episodes
+                return fetch(`${API_URL}/anime/${animeId}/episodes`)
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error('Failed to fetch anime details');
+                            throw new Error('Failed to fetch episodes');
                         }
                         return response.json();
                     })
-                    .then(anime => {
-                        displayEpisodes(episodes, anime);
-                        hideLoading();
+                    .then(episodes => {
+                        return fetch(`${API_URL}/anime/${animeId}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Failed to fetch anime details');
+                                }
+                                return response.json();
+                            })
+                            .then(anime => {
+                                displayEpisodes(episodes, anime);
+                                hideLoading();
+                            });
                     });
+            })
+            .catch(error => {
+                console.error('Error adding episode:', error);
+                showError(error.error || 'Failed to add episode');
+                hideLoading();
             });
-    })
-    .catch(error => {
-        console.error('Error updating episode:', error);
-        showError(error.error || 'Failed to update episode');
-        hideLoading();
-    });
-});
-
-// Delete episode
-document.getElementById('confirmDeleteEpisodeBtn').addEventListener('click', function() {
-    const episodeId = this.getAttribute('data-episode-id');
-    
-    showLoading();
-    fetch(`${API_URL}/episodes/${episodeId}`, {
-        method: 'DELETE'
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(error => Promise.reject(error));
+        });
+        
+        // Open edit episode modal
+        function openEditEpisodeModal(episodeId) {
+            showLoading();
+            fetch(`${API_URL}/episodes/${episodeId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch episode details');
+                    }
+                    return response.json();
+                })
+                .then(episode => {
+                    // Populate form - simplified for just iframeSrc and server2Url
+                    document.getElementById('editEpisodeId').value = episode.id;
+                    document.getElementById('editIframeSrc').value = episode.iframeSrc || '';
+                    document.getElementById('editServer2Url').value = episode.server2Url || '';
+                    
+                    // Show modal
+                    const editModal = new bootstrap.Modal(document.getElementById('editEpisodeModal'));
+                    editModal.show();
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error fetching episode details:', error);
+                    showError('Failed to load episode details: ' + error.message);
+                    hideLoading();
+                });
         }
-        return response.json();
-    })
-    .then(result => {
-        // Close modal
-        const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteEpisodeModal'));
-        deleteModal.hide();
         
-        // Show success message
-        showSuccess('Episode deleted successfully');
-        
-        // Reload episodes
-        const animeId = document.getElementById('episodeAnimeSelector').value;
-        return fetch(`${API_URL}/anime/${animeId}/episodes`)
+        // Save edited episode - simplified to only update URLs
+        document.getElementById('saveEditEpisodeBtn').addEventListener('click', function() {
+            const episodeId = document.getElementById('editEpisodeId').value;
+            const iframeSrc = document.getElementById('editIframeSrc').value;
+            const server2Url = document.getElementById('editServer2Url').value;
+            
+            if (!server2Url) {
+                showError('Server 2 URL is required');
+                return;
+            }
+            
+            const episodeData = {
+                iframeSrc: iframeSrc || '',
+                server2Url: server2Url
+            };
+            
+            showLoading();
+            fetch(`${API_URL}/episodes/${episodeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(episodeData)
+            })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to fetch episodes');
+                    return response.json().then(error => Promise.reject(error));
                 }
                 return response.json();
             })
-            .then(episodes => {
-                return fetch(`${API_URL}/anime/${animeId}`)
+            .then(updatedEpisode => {
+                // Close modal
+                const editModal = bootstrap.Modal.getInstance(document.getElementById('editEpisodeModal'));
+                editModal.hide();
+                
+                // Show success message
+                showSuccess(`Episode ${updatedEpisode.number} updated successfully`);
+                
+                // Reload episodes
+                const animeId = document.getElementById('episodeAnimeSelector').value;
+                return fetch(`${API_URL}/anime/${animeId}/episodes`)
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error('Failed to fetch anime details');
+                            throw new Error('Failed to fetch episodes');
                         }
                         return response.json();
                     })
-                    .then(anime => {
-                        displayEpisodes(episodes, anime);
-                        hideLoading();
+                    .then(episodes => {
+                        return fetch(`${API_URL}/anime/${animeId}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Failed to fetch anime details');
+                                }
+                                return response.json();
+                            })
+                            .then(anime => {
+                                displayEpisodes(episodes, anime);
+                                hideLoading();
+                            });
                     });
+            })
+            .catch(error => {
+                console.error('Error updating episode:', error);
+                showError(error.error || 'Failed to update episode');
+                hideLoading();
             });
-    })
-    .catch(error => {
-        console.error('Error deleting episode:', error);
-        showError(error.error || 'Failed to delete episode');
-        hideLoading();
-    });
-});
-
-// Initialize the app - load dashboard data and check server status
-document.addEventListener('DOMContentLoaded', function() {
-    loadDashboardData();
-    checkServerStatus();
-});
-</script>
+        });
+        
+        // Delete episode
+        document.getElementById('confirmDeleteEpisodeBtn').addEventListener('click', function() {
+            const episodeId = this.getAttribute('data-episode-id');
+            
+            showLoading();
+            fetch(`${API_URL}/episodes/${episodeId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(error => Promise.reject(error));
+                }
+                return response.json();
+            })
+            .then(result => {
+                // Close modal
+                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteEpisodeModal'));
+                deleteModal.hide();
+                
+                // Show success message
+                showSuccess('Episode deleted successfully');
+                
+                // Reload episodes
+                const animeId = document.getElementById('episodeAnimeSelector').value;
+                return fetch(`${API_URL}/anime/${animeId}/episodes`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch episodes');
+                        }
+                        return response.json();
+                    })
+                    .then(episodes => {
+                        return fetch(`${API_URL}/anime/${animeId}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Failed to fetch anime details');
+                                }
+                                return response.json();
+                            })
+                            .then(anime => {
+                                displayEpisodes(episodes, anime);
+                                hideLoading();
+                            });
+                    });
+            })
+            .catch(error => {
+                console.error('Error deleting episode:', error);
+                showError(error.error || 'Failed to delete episode');
+                hideLoading();
+            });
+        });
+        
+        // Initialize the app - load dashboard data and check server status
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            checkServerStatus();
+        });
+    </script>
 </body>
 </html>
