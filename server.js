@@ -11,7 +11,7 @@ const HOST = process.env.HOST || '0.0.0.0'; // This ensures binding to all netwo
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for bulk uploads
+app.use(bodyParser.json());
 app.use(express.static('public'));
 
 // Data file paths - use environment variable for data directory in production
@@ -387,12 +387,12 @@ app.post('/api/episodes', async (req, res) => {
   
   // Get existing episodes to determine the next episode number
   const existingEpisodes = episodes.filter(e => e.animeId === req.body.animeId);
-  const nextEpisodeNumber = existingEpisodes.length > 0 
+  const nextEpisodeNumber = req.body.number || (existingEpisodes.length > 0 
     ? Math.max(...existingEpisodes.map(e => e.number)) + 1 
-    : 1;
+    : 1);
   
-  // Auto-generate episode title
-  const episodeTitle = `Episode ${nextEpisodeNumber}`;
+  // Auto-generate episode title if not provided
+  const episodeTitle = req.body.title || `Episode ${nextEpisodeNumber}`;
   
   const newEpisode = {
     id: Date.now().toString(),
@@ -410,94 +410,6 @@ app.post('/api/episodes', async (req, res) => {
     res.status(201).json(newEpisode);
   } else {
     res.status(500).json({ error: 'Failed to add episode' });
-  }
-});
-
-// Bulk add episodes
-app.post('/api/bulk-episodes', async (req, res) => {
-  try {
-    const { animeId, episodes: episodeUrls } = req.body;
-    
-    if (!animeId) {
-      return res.status(400).json({ error: 'Anime ID is required' });
-    }
-    
-    if (!episodeUrls || !Array.isArray(episodeUrls) || episodeUrls.length === 0) {
-      return res.status(400).json({ error: 'Episodes array is required' });
-    }
-    
-    // Check if anime exists
-    const customAnimeList = readData(CUSTOM_ANIME_FILE);
-    const animeExists = customAnimeList.some(a => a.id === animeId);
-    
-    if (!animeExists) {
-      return res.status(404).json({ error: 'Anime not found in our list' });
-    }
-    
-    const allEpisodes = readData(EPISODES_FILE);
-    const existingEpisodes = allEpisodes.filter(e => e.animeId === animeId);
-    
-    // Find the highest episode number for this anime
-    let nextEpisodeNumber = existingEpisodes.length > 0 
-      ? Math.max(...existingEpisodes.map(e => e.number)) + 1 
-      : 1;
-    
-    const newEpisodes = [];
-    const results = {
-      success: 0,
-      failed: 0,
-      details: []
-    };
-    
-    // Process each episode URL
-    for (const episodeData of episodeUrls) {
-      try {
-        // Create a new episode
-        const newEpisode = {
-          id: Date.now().toString() + Math.floor(Math.random() * 1000),
-          animeId: animeId,
-          title: `Episode ${nextEpisodeNumber}`,
-          number: nextEpisodeNumber,
-          iframeSrc: episodeData.iframeSrc || "",
-          server2Url: episodeData.server2Url || "",
-          dateAdded: new Date().toISOString()
-        };
-        
-        newEpisodes.push(newEpisode);
-        nextEpisodeNumber++;
-        results.success++;
-        results.details.push({ 
-          episode: newEpisode.number, 
-          status: 'success', 
-          id: newEpisode.id 
-        });
-      } catch (error) {
-        console.error(`Error creating episode ${nextEpisodeNumber}:`, error);
-        results.failed++;
-        results.details.push({ 
-          episode: nextEpisodeNumber, 
-          status: 'failed', 
-          error: error.message 
-        });
-        nextEpisodeNumber++;
-      }
-    }
-    
-    // Add all new episodes to the existing ones
-    allEpisodes.push(...newEpisodes);
-    
-    // Save to file
-    if (writeData(EPISODES_FILE, allEpisodes)) {
-      res.status(201).json({ 
-        message: `Added ${results.success} episodes (${results.failed} failed)`,
-        results 
-      });
-    } else {
-      res.status(500).json({ error: 'Failed to save episodes to file' });
-    }
-  } catch (error) {
-    console.error("Error in bulk episode upload:", error);
-    res.status(500).json({ error: 'Failed to process bulk episode upload' });
   }
 });
 
