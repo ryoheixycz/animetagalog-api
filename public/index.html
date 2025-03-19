@@ -6,77 +6,206 @@
     <title>Anime Tagalog Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        
         body {
-            background-color: #f8f9fa;
+            background-color: #f8fafc;
         }
+        
+        /* Modern sidebar styling */
         .sidebar {
-            background: linear-gradient(135deg, #6f42c1 0%, #4e73df 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%);
             min-height: 100vh;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            z-index: 100;
+            transition: all 0.3s;
         }
+        
+        /* Sidebar mobile handling */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-250px);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+            transition: all 0.3s;
+        }
+        
+        .mobile-menu-toggle {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 101;
+            background-color: rgba(79, 70, 229, 0.9);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 991.98px) {
+            .mobile-menu-toggle {
+                display: flex;
+            }
+        }
+        
         .sidebar-link {
             color: rgba(255, 255, 255, 0.8);
-            padding: 0.75rem 1rem;
-            display: block;
-            transition: all 0.2s;
-            border-radius: 0.25rem;
-            margin: 0.2rem 0;
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            border-radius: 8px;
+            margin: 0.25rem 0.75rem;
             text-decoration: none;
+            font-weight: 500;
         }
+        
         .sidebar-link:hover, .sidebar-link.active {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.15);
             color: #fff;
-            text-decoration: none;
+            transform: translateX(5px);
         }
+        
+        .sidebar-link i {
+            margin-right: 12px;
+            font-size: 1.2rem;
+        }
+        
         .sidebar-brand {
             color: #fff;
-            font-weight: bold;
-            font-size: 1.2rem;
-            padding: 1.5rem 1rem;
+            font-weight: 600;
+            font-size: 1.3rem;
+            padding: 1.75rem 1.5rem;
             text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
         }
+        
+        /* Modern card styling */
         .content {
-            padding: 1.5rem;
+            padding: 2rem 1.5rem;
         }
+        
         .card {
             border: none;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
-            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden;
         }
+        
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+        
+        .stat-card {
+            border-left: none !important;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            border-radius: 6px 0 0 6px;
+        }
+        
+        .stat-card.primary-card::before {
+            background: linear-gradient(to bottom, #4f46e5, #7e22ce);
+        }
+        
+        .stat-card.success-card::before {
+            background: linear-gradient(to bottom, #10b981, #059669);
+        }
+        
+        .stat-card.info-card::before {
+            background: linear-gradient(to bottom, #0ea5e9, #0284c7);
+        }
+        
         .card-header {
             background-color: #fff;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             font-weight: 600;
+            padding: 1.25rem 1.5rem;
         }
+        
         .btn-primary {
-            background: linear-gradient(135deg, #6f42c1 0%, #4e73df 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%);
             border: none;
+            font-weight: 500;
         }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+        }
+        
         .anime-card {
-            transition: transform 0.2s;
+            transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer;
+            height: 100%;
         }
+        
         .anime-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
+        
         .anime-thumbnail {
             height: 250px;
             object-fit: cover;
-            border-top-left-radius: 0.5rem;
-            border-top-right-radius: 0.5rem;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            width: 100%;
         }
+        
         .episode-item {
-            background-color: #f8f9fa;
-            border-radius: 0.5rem;
-            margin-bottom: 0.5rem;
-            padding: 0.75rem;
-            transition: all 0.2s;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            padding: 1rem;
+            transition: all 0.3s;
+            border: 1px solid rgba(0, 0, 0, 0.03);
         }
+        
         .episode-item:hover {
-            background-color: #e9ecef;
+            background-color: #f0f5ff;
+            border-color: rgba(79, 70, 229, 0.1);
+            transform: translateX(5px);
         }
+        
+        /* Loading spinner & overlay */
         #loadingSpinner {
             display: none;
             position: fixed;
@@ -84,11 +213,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.7);
             z-index: 9999;
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(3px);
         }
+        
+        /* Search dropdown styling */
         .search-results {
             position: absolute;
             width: 100%;
@@ -96,149 +228,306 @@
             overflow-y: auto;
             z-index: 1000;
             background: white;
-            border: 1px solid #ddd;
-            border-radius: 0.25rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             display: none;
+            padding: 0.5rem 0;
         }
+        
         .search-result-item {
-            padding: 0.75rem;
-            border-bottom: 1px solid #eee;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
             cursor: pointer;
+            transition: all 0.2s;
         }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
         .search-result-item:hover {
-            background-color: #f8f9fa;
+            background-color: #f0f5ff;
         }
-        .border-left-primary {
-            border-left: 0.25rem solid #4e73df !important;
-        }
-        .border-left-success {
-            border-left: 0.25rem solid #1cc88a !important;
-        }
-        .border-left-info {
-            border-left: 0.25rem solid #36b9cc !important;
-        }
-        @media (max-width: 768px) {
-            .sidebar {
-                min-height: auto;
-            }
-            .content {
-                padding: 1rem;
-            }
-            .hidden-mobile {
-                display: none;
-            }
-        }
+        
+        /* Status indicator styling */
         #serverStatus {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 9999;
+            bottom: 15px;
+            right: 15px;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 13px;
+            z-index: 999;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
         }
+        
         .status-online {
-            background-color: #1cc88a;
+            background-color: #10b981;
             color: white;
         }
+        
         .status-offline {
-            background-color: #e74a3b;
+            background-color: #ef4444;
             color: white;
+        }
+        
+        #serverStatus::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            background-color: currentColor;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+        
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            border: 1px solid #e5e7eb;
+            font-size: 0.95rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #a5b4fc;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        /* Badges and tags */
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+            border-radius: 6px;
+        }
+        
+        /* Table styling */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        
+        .table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.025em;
+        }
+        
+        .table th, .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .table-responsive {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        /* Modal styling */
+        .modal-content {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid #f3f4f6;
+            padding: 1.25rem 1.5rem;
+        }
+        
+        .modal-footer {
+            border-top: 1px solid #f3f4f6;
+            padding: 1.25rem 1.5rem;
+        }
+        
+        /* Toast notification */
+        .toast {
+            border: none;
+            border-radius: 12px;
+            background-color: white;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        
+        .toast-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .toast-body {
+            padding: 1rem;
+        }
+        
+        /* Page header section */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .page-title {
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: #111827;
+            margin-bottom: 0;
+        }
+        
+        /* Custom indicators for stats */
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .stat-primary {
+            background-color: rgba(79, 70, 229, 0.1);
+            color: #4f46e5;
+        }
+        
+        .stat-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        
+        .stat-info {
+            background-color: rgba(14, 165, 233, 0.1);
+            color: #0ea5e9;
+        }
+        
+        /* Badge for bulk episodes count */
+        .badge-count {
+            position: relative;
+            top: -1px;
+            background-color: #f3f4f6;
+            color: #4b5563;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
+    <!-- Loading Spinner -->
     <div id="loadingSpinner">
-        <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">Loading...</span>
+        <div class="d-flex flex-column align-items-center">
+            <div class="spinner-border text-light mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+            <p class="text-white">Loading...</p>
         </div>
     </div>
 
-    <div id="serverStatus" class="status-offline">Connecting to server...</div>
+    <!-- Mobile Menu Toggle Button -->
+    <button class="mobile-menu-toggle" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-md-block sidebar collapse p-0">
-                <div class="sidebar-brand">
-                    <i class="bi bi-film me-2"></i> Anime Tagalog Admin
-                </div>
-                <div class="mt-4">
-                    <a href="#" class="sidebar-link active" id="dashboard-link">
-                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                    </a>
-                    <a href="#" class="sidebar-link" id="anime-link">
-                        <i class="bi bi-film me-2"></i> Anime Library
-                    </a>
-                    <a href="#" class="sidebar-link" id="add-anime-link">
-                        <i class="bi bi-plus-circle me-2"></i> Add Anime
-                    </a>
-                    <a href="#" class="sidebar-link" id="episodes-link">
-                        <i class="bi bi-collection-play me-2"></i> Episodes
-                    </a>
-                </div>
+    <!-- Server Status Indicator -->
+    <div id="serverStatus" class="status-offline">Connecting...</div>
+
+    <div class="container-fluid p-0 d-flex">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="bi bi-film me-2"></i> Anime Tagalog
             </div>
+            <div class="mt-2">
+                <a href="#" class="sidebar-link active" id="dashboard-link">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a href="#" class="sidebar-link" id="anime-link">
+                    <i class="bi bi-film"></i> Anime Library
+                </a>
+                <a href="#" class="sidebar-link" id="add-anime-link">
+                    <i class="bi bi-plus-circle"></i> Add Anime
+                </a>
+                <a href="#" class="sidebar-link" id="episodes-link">
+                    <i class="bi bi-collection-play"></i> Episodes
+                </a>
+            </div>
+        </aside>
 
-            <!-- Main Content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 content">
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content">
                 <!-- Dashboard View -->
                 <div id="dashboard-view">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Dashboard</h1>
-                        <div class="btn-toolbar mb-2 mb-md-0">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-dashboard">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
+                    <div class="page-header">
+                        <h1 class="page-title">Dashboard</h1>
+                        <button type="button" class="btn btn-light" id="refresh-dashboard">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                        </button>
                     </div>
                     
                     <div class="row">
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-primary shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Total Anime</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-anime">0</div>
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card stat-card primary-card h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-uppercase text-muted mb-2 small">Total Anime</h6>
+                                            <h2 class="mb-0 fs-3 fw-semibold" id="total-anime">0</h2>
                                         </div>
-                                        <div class="col-auto">
-                                            <i class="bi bi-film fs-2 text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-success shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Total Episodes</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-episodes">0</div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="bi bi-collection-play fs-2 text-gray-300"></i>
+                                        <div class="stat-icon stat-primary">
+                                            <i class="bi bi-film"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-info shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                                Recent Updates</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="recent-updates">0</div>
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card stat-card success-card h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-uppercase text-muted mb-2 small">Total Episodes</h6>
+                                            <h2 class="mb-0 fs-3 fw-semibold" id="total-episodes">0</h2>
                                         </div>
-                                        <div class="col-auto">
-                                            <i class="bi bi-clock-history fs-2 text-gray-300"></i>
+                                        <div class="stat-icon stat-success">
+                                            <i class="bi bi-collection-play"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card stat-card info-card h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-uppercase text-muted mb-2 small">Recent Updates</h6>
+                                            <h2 class="mb-0 fs-3 fw-semibold" id="recent-updates">0</h2>
+                                        </div>
+                                        <div class="stat-icon stat-info">
+                                            <i class="bi bi-clock-history"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -247,25 +536,28 @@
                     </div>
 
                     <div class="card mb-4">
-                        <div class="card-header">
-                            <i class="bi bi-table me-1"></i>
-                            Latest Updates
+                        <div class="card-header d-flex align-items-center">
+                            <i class="bi bi-table me-2"></i>
+                            <span>Latest Updates</span>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                <table class="table mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Type</th>
+                                            <th width="10%">Type</th>
                                             <th>Title</th>
-                                            <th>Added</th>
-                                            <th>Action</th>
+                                            <th width="15%">Added</th>
+                                            <th width="10%">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="latest-updates-table">
                                         <!-- Latest updates will be populated here -->
                                         <tr>
-                                            <td colspan="4" class="text-center">Loading...</td>
+                                            <td colspan="4" class="text-center py-4">
+                                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                                Loading latest updates...
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -276,68 +568,80 @@
 
                 <!-- Anime Library View -->
                 <div id="anime-view" style="display: none;">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Anime Library</h1>
-                        <div class="btn-toolbar mb-2 mb-md-0">
-                            <button type="button" class="btn btn-primary" id="add-anime-btn">
-                                <i class="bi bi-plus-lg"></i> Add New Anime
-                            </button>
-                        </div>
+                    <div class="page-header">
+                        <h1 class="page-title">Anime Library</h1>
+                        <button type="button" class="btn btn-primary" id="add-anime-btn">
+                            <i class="bi bi-plus-lg me-1"></i> Add New Anime
+                        </button>
                     </div>
                     
                     <div class="row" id="anime-list">
                         <!-- Anime cards will be populated here -->
                         <div class="col-12 text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-3 text-muted">Loading anime library...</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Add Anime View -->
                 <div id="add-anime-view" style="display: none;">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Add New Anime</h1>
+                    <div class="page-header">
+                        <h1 class="page-title">Add New Anime</h1>
                     </div>
                     
                     <div class="card">
                         <div class="card-header">
+                            <i class="bi bi-search me-2"></i>
                             Search Anime on AniList
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
+                            <div class="mb-4">
                                 <label for="animeSearch" class="form-label">Search by Title</label>
                                 <div class="position-relative">
-                                    <input type="text" class="form-control" id="animeSearch" placeholder="Enter anime title...">
+                                    <input type="text" class="form-control" id="animeSearch" placeholder="Enter anime title and press enter...">
                                     <div class="search-results" id="searchResults">
                                         <!-- Search results will be populated here -->
                                     </div>
                                 </div>
                             </div>
                             
-                            <div id="selectedAnimeDetails" style="display: none;">
-                                <div class="row mt-4">
-                                    <div class="col-md-4">
-                                        <img id="selectedAnimeThumbnail" src="" alt="Anime Cover" class="img-fluid rounded">
-                                    </div>
-                                    <div class="col-md-8">
-                                        <h3 id="selectedAnimeTitle"></h3>
-                                        <p id="selectedAnimeDescription" class="text-muted"></p>
-                                        <div class="d-flex flex-wrap gap-2 mb-3" id="selectedAnimeGenres">
-                                            <!-- Genres will be populated here -->
-                                        </div>
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <p><strong>Episodes:</strong> <span id="selectedAnimeEpisodes"></span></p>
-                                                <p><strong>Status:</strong> <span id="selectedAnimeStatus"></span></p>
+                            <div id="selectedAnimeDetails" style="display: none;" class="mt-4">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-lg-3 col-md-4 mb-4 mb-md-0">
+                                                <img id="selectedAnimeThumbnail" src="" alt="Anime Cover" class="img-fluid rounded shadow-sm">
                                             </div>
-                                            <div class="col-md-6">
-                                                <p><strong>Season:</strong> <span id="selectedAnimeSeason"></span></p>
-                                                <p><strong>Rating:</strong> <span id="selectedAnimeRating"></span></p>
+                                            <div class="col-lg-9 col-md-8">
+                                                <h3 id="selectedAnimeTitle" class="mb-3 fw-bold"></h3>
+                                                <p id="selectedAnimeDescription" class="text-muted"></p>
+                                                <div class="d-flex flex-wrap gap-2 mb-3" id="selectedAnimeGenres">
+                                                    <!-- Genres will be populated here -->
+                                                </div>
+                                                <div class="row g-3 mb-3">
+                                                    <div class="col-sm-6 col-lg-3">
+                                                        <div class="fw-medium">Episodes</div>
+                                                        <span id="selectedAnimeEpisodes">-</span>
+                                                    </div>
+                                                    <div class="col-sm-6 col-lg-3">
+                                                        <div class="fw-medium">Status</div>
+                                                        <span id="selectedAnimeStatus">-</span>
+                                                    </div>
+                                                    <div class="col-sm-6 col-lg-3">
+                                                        <div class="fw-medium">Season</div>
+                                                        <span id="selectedAnimeSeason">-</span>
+                                                    </div>
+                                                    <div class="col-sm-6 col-lg-3">
+                                                        <div class="fw-medium">Rating</div>
+                                                        <span id="selectedAnimeRating">-</span>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-primary" id="addSelectedAnime">
+                                                    <i class="bi bi-plus-circle me-1"></i> Add to Library
+                                                </button>
                                             </div>
                                         </div>
-                                        <button class="btn btn-primary" id="addSelectedAnime">Add to Library</button>
                                     </div>
                                 </div>
                             </div>
@@ -347,17 +651,17 @@
 
                 <!-- Episodes View -->
                 <div id="episodes-view" style="display: none;">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Manage Episodes</h1>
+                    <div class="page-header">
+                        <h1 class="page-title">Manage Episodes</h1>
                     </div>
                     
                     <div class="card mb-4">
                         <div class="card-header">
                             <div class="row align-items-center">
-                                <div class="col">
+                                <div class="col-md-4">
                                     <h5 class="mb-0">Select Anime</h5>
                                 </div>
-                                <div class="col-auto">
+                                <div class="col-md-8">
                                     <select class="form-select" id="episodeAnimeSelector">
                                         <option value="">Choose an anime...</option>
                                         <!-- Anime options will be populated here -->
@@ -368,45 +672,49 @@
                     </div>
                     
                     <div id="episodeManagementArea" style="display: none;">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="card">
+                        <div class="row g-4">
+                            <div class="col-lg-4">
+                                <div class="card mb-4">
                                     <img id="episodeAnimeThumbnail" src="" class="card-img-top anime-thumbnail" alt="Anime Cover">
                                     <div class="card-body">
-                                        <h5 id="episodeAnimeTitle" class="card-title"></h5>
-                                        <p id="episodeAnimeEpisodeCount" class="card-text"></p>
+                                        <h5 id="episodeAnimeTitle" class="card-title fw-bold"></h5>
+                                        <p id="episodeAnimeEpisodeCount" class="card-text text-muted"></p>
                                     </div>
                                 </div>
                                 
                                 <!-- Simplified Episode Form -->
-                                <div class="card mt-3">
+                                <div class="card mb-4">
                                     <div class="card-header">
+                                        <i class="bi bi-plus-circle me-2"></i>
                                         Add New Episode
                                     </div>
                                     <div class="card-body">
                                         <form id="addEpisodeForm">
                                             <div class="mb-3">
                                                 <label for="iframeSrc" class="form-label">iFrame Source (optional)</label>
-                                                <input type="text" class="form-control" id="iframeSrc">
+                                                <input type="text" class="form-control" id="iframeSrc" placeholder="Enter iframe embed URL">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="server2Url" class="form-label">Server 2 URL</label>
-                                                <input type="text" class="form-control" id="server2Url" required>
+                                                <input type="text" class="form-control" id="server2Url" required placeholder="Enter direct video URL">
                                             </div>
-                                            <button type="submit" class="btn btn-primary w-100">Add Episode</button>
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="bi bi-plus-lg me-1"></i> Add Episode
+                                            </button>
                                         </form>
                                     </div>
                                 </div>
                                 
                                 <!-- Bulk Episode Uploader -->
-                                <div class="card mt-3">
+                                <div class="card">
                                     <div class="card-header">
-                                        <h5 class="mb-0">Bulk Add Episodes</h5>
+                                        <i class="bi bi-cloud-upload me-2"></i>
+                                        Bulk Add Episodes
                                     </div>
                                     <div class="card-body">
                                         <div class="mb-3">
                                             <label for="bulkEpisodeHtml" class="form-label">Paste HTML Select with Episodes</label>
-                                            <textarea class="form-control" id="bulkEpisodeHtml" rows="6" placeholder="<select id='episode-select'>...</select>"></textarea>
+                                            <textarea class="form-control" id="bulkEpisodeHtml" rows="5" placeholder="<select id='episode-select'>...</select>"></textarea>
                                             <div class="form-text">Paste the HTML select element containing episode options with server2Url attributes.</div>
                                         </div>
                                         <div class="mb-3">
@@ -417,27 +725,34 @@
                                             <input type="checkbox" class="form-check-input" id="replaceExisting">
                                             <label class="form-check-label" for="replaceExisting">Replace existing episodes</label>
                                         </div>
-                                        <div class="d-flex justify-content-between">
-                                            <button type="button" class="btn btn-primary" id="parseBulkEpisodesBtn">
-                                                Parse Episodes <span class="badge bg-light text-dark ms-1" id="episodeCount">0</span>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-primary flex-grow-1" id="parseBulkEpisodesBtn">
+                                                <i class="bi bi-code-slash me-1"></i> Parse 
+                                                <span class="badge bg-light text-dark ms-1 badge-count" id="episodeCount">0</span>
                                             </button>
-                                            <button type="button" class="btn btn-success" id="uploadBulkEpisodesBtn" disabled>
-                                                Upload Episodes
+                                            <button type="button" class="btn btn-success flex-grow-1" id="uploadBulkEpisodesBtn" disabled>
+                                                <i class="bi bi-cloud-upload me-1"></i> Upload
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="col-md-8">
+                            <div class="col-lg-8">
                                 <div class="card">
                                     <div class="card-header">
-                                        Episodes List
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <i class="bi bi-collection-play me-2"></i>
+                                                Episodes List
+                                            </div>
+                                            <div class="text-muted small" id="episodes-count-display"></div>
+                                        </div>
                                     </div>
-                                    <div class="card-body">
-                                        <div id="episodesList">
+                                    <div class="card-body p-0">
+                                        <div id="episodesList" class="p-3">
                                             <!-- Episodes will be populated here -->
-                                            <div class="text-center py-3">
+                                            <div class="text-center py-5">
                                                 <p class="text-muted">Select an anime to manage episodes</p>
                                             </div>
                                         </div>
@@ -447,8 +762,8 @@
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </main>
     </div>
 
     <!-- Edit Episode Modal -->
@@ -474,8 +789,10 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveEditEpisodeBtn">Save Changes</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditEpisodeBtn">
+                        <i class="bi bi-check-lg me-1"></i> Save Changes
+                    </button>
                 </div>
             </div>
         </div>
@@ -490,12 +807,16 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to delete this episode?</p>
-                    <p id="deleteEpisodeInfo"></p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i> Are you sure you want to delete this episode?
+                    </div>
+                    <p class="fw-medium" id="deleteEpisodeInfo"></p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteEpisodeBtn">Delete</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteEpisodeBtn">
+                        <i class="bi bi-trash me-1"></i> Delete
+                    </button>
                 </div>
             </div>
         </div>
@@ -510,8 +831,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i> Review the episodes below before confirming upload.
+                    </div>
                     <div class="table-responsive">
-                        <table class="table table-striped table-bordered">
+                        <table class="table table-striped mb-0">
                             <thead>
                                 <tr>
                                     <th>Episode #</th>
@@ -527,8 +851,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmBulkUploadBtn">Confirm Upload</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmBulkUploadBtn">
+                        <i class="bi bi-cloud-upload me-1"></i> Confirm Upload
+                    </button>
                 </div>
             </div>
         </div>
@@ -538,6 +864,7 @@
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
         <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-circle me-2"></i>
                 <strong class="me-auto">Error</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
@@ -551,6 +878,7 @@
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
         <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle me-2"></i>
                 <strong class="me-auto">Success</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
@@ -564,6 +892,11 @@
     <script>
         // Backend API URL - automatically detect whether we're on localhost or deployed
         const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
+        
+        // Initialize the sidebar toggle for mobile
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('show');
+        });
         
         // Toast instances
         const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
@@ -618,49 +951,50 @@
         document.getElementById('dashboard-link').addEventListener('click', function(e) {
             e.preventDefault();
             showView('dashboard-view');
-            this.classList.add('active');
-            document.getElementById('anime-link').classList.remove('active');
-            document.getElementById('add-anime-link').classList.remove('active');
-            document.getElementById('episodes-link').classList.remove('active');
+            activateNavLink(this);
             loadDashboardData();
         });
         
         document.getElementById('anime-link').addEventListener('click', function(e) {
             e.preventDefault();
             showView('anime-view');
-            this.classList.add('active');
-            document.getElementById('dashboard-link').classList.remove('active');
-            document.getElementById('add-anime-link').classList.remove('active');
-            document.getElementById('episodes-link').classList.remove('active');
+            activateNavLink(this);
             loadAnimeList();
         });
         
         document.getElementById('add-anime-link').addEventListener('click', function(e) {
             e.preventDefault();
             showView('add-anime-view');
-            this.classList.add('active');
-            document.getElementById('dashboard-link').classList.remove('active');
-            document.getElementById('anime-link').classList.remove('active');
-            document.getElementById('episodes-link').classList.remove('active');
+            activateNavLink(this);
         });
         
         document.getElementById('episodes-link').addEventListener('click', function(e) {
             e.preventDefault();
             showView('episodes-view');
-            this.classList.add('active');
-            document.getElementById('dashboard-link').classList.remove('active');
-            document.getElementById('anime-link').classList.remove('active');
-            document.getElementById('add-anime-link').classList.remove('active');
+            activateNavLink(this);
             loadAnimeForEpisodes();
         });
         
         document.getElementById('add-anime-btn').addEventListener('click', function() {
             showView('add-anime-view');
-            document.getElementById('add-anime-link').classList.add('active');
-            document.getElementById('dashboard-link').classList.remove('active');
-            document.getElementById('anime-link').classList.remove('active');
-            document.getElementById('episodes-link').classList.remove('active');
+            activateNavLink(document.getElementById('add-anime-link'));
         });
+        
+        // Helper function to activate the correct nav link
+        function activateNavLink(link) {
+            // Remove active class from all links
+            document.querySelectorAll('.sidebar-link').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Add active class to the clicked link
+            link.classList.add('active');
+            
+            // On mobile, hide the sidebar after selection
+            if (window.innerWidth < 992) {
+                document.getElementById('sidebar').classList.remove('show');
+            }
+        }
         
         // Refresh dashboard
         document.getElementById('refresh-dashboard').addEventListener('click', function() {
@@ -677,7 +1011,7 @@
             document.getElementById(viewId).style.display = 'block';
         }
         
-        // Load dashboard data
+        // Load dashboard data with fixed episode counting
         function loadDashboardData() {
             showLoading();
             
@@ -692,7 +1026,7 @@
                 .then(animeList => {
                     document.getElementById('total-anime').textContent = animeList.length;
                     
-                    // Fetch episodes
+                    // Fetch episodes - use a direct call to get all episodes
                     return fetch(`${API_URL}/episodes`)
                         .then(response => {
                             if (!response.ok) {
@@ -702,28 +1036,36 @@
                         });
                 })
                 .then(episodes => {
-                    document.getElementById('total-episodes').textContent = episodes.length;
+                    // Ensure episodes are unique by ID to avoid duplication
+                    const uniqueEpisodes = Array.from(new Map(episodes.map(item => 
+                        [item.id, item])).values());
+                        
+                    document.getElementById('total-episodes').textContent = uniqueEpisodes.length;
                     
                     // Sort episodes by date added (descending)
-                    episodes.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+                    uniqueEpisodes.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
                     
-                    // Display recent updates
-                    document.getElementById('recent-updates').textContent = episodes.length > 0 ? 
-                        episodes.slice(0, 5).length : 0;
+                    // Display recent updates - use the unique episodes
+                    document.getElementById('recent-updates').textContent = uniqueEpisodes.length > 0 ? 
+                        Math.min(uniqueEpisodes.length, 5) : 0;
                     
                     // Populate latest updates table
                     const updatesTableBody = document.getElementById('latest-updates-table');
                     updatesTableBody.innerHTML = '';
                     
-                    if (episodes.length === 0) {
+                    if (uniqueEpisodes.length === 0) {
                         updatesTableBody.innerHTML = `
                             <tr>
-                                <td colspan="4" class="text-center">No updates found</td>
+                                <td colspan="4" class="text-center py-4">
+                                    <i class="bi bi-info-circle me-2 text-muted"></i>
+                                    No updates found
+                                </td>
                             </tr>
                         `;
                     } else {
-                        // Get anime data for each episode
-                        const animePromises = episodes.slice(0, 5).map(episode => 
+                        // Get anime data for each episode - only show the most recent 5
+                        const recentEpisodes = uniqueEpisodes.slice(0, 5);
+                        const animePromises = recentEpisodes.map(episode => 
                             fetch(`${API_URL}/anime/${episode.animeId}`)
                                 .then(response => {
                                     if (!response.ok) {
@@ -748,13 +1090,25 @@
                         Promise.all(animePromises)
                             .then(results => {
                                 results.forEach(result => {
+                                    const dateAdded = new Date(result.episode.dateAdded);
+                                    const formattedDate = dateAdded.toLocaleDateString(undefined, {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                    });
+                                    
                                     const row = document.createElement('tr');
                                     row.innerHTML = `
-                                        <td>Episode</td>
-                                        <td>${result.anime.title} - Ep ${result.episode.number}: ${result.episode.title || 'Untitled'}</td>
-                                        <td>${new Date(result.episode.dateAdded).toLocaleDateString()}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-primary view-episode-btn" 
+                                            <span class="badge bg-primary">Episode</span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium">${result.anime.title}</div>
+                                            <small class="text-muted">Ep ${result.episode.number}: ${result.episode.title || 'Untitled'}</small>
+                                        </td>
+                                        <td>${formattedDate}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary view-episode-btn" 
                                                 data-anime-id="${result.episode.animeId}" 
                                                 data-episode-id="${result.episode.id}">
                                                 <i class="bi bi-eye"></i>
@@ -771,10 +1125,7 @@
                                         
                                         // Switch to episodes view
                                         showView('episodes-view');
-                                        document.getElementById('episodes-link').classList.add('active');
-                                        document.getElementById('dashboard-link').classList.remove('active');
-                                        document.getElementById('anime-link').classList.remove('active');
-                                        document.getElementById('add-anime-link').classList.remove('active');
+                                        activateNavLink(document.getElementById('episodes-link'));
                                         
                                         // Load anime for episodes
                                         loadAnimeForEpisodes(animeId);
@@ -785,7 +1136,10 @@
                                 console.error('Error loading episode details:', error);
                                 updatesTableBody.innerHTML = `
                                     <tr>
-                                        <td colspan="4" class="text-center text-danger">Error loading episode details</td>
+                                        <td colspan="4" class="text-center text-danger py-4">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            Error loading episode details
+                                        </td>
                                     </tr>
                                 `;
                             });
@@ -817,31 +1171,45 @@
                     
                     if (animeList.length === 0) {
                         animeListContainer.innerHTML = `
-                            <div class="col-12 text-center">
+                            <div class="col-12 text-center py-5">
+                                <i class="bi bi-collection fs-1 text-muted mb-3"></i>
                                 <p class="text-muted">No anime found. Add some to get started!</p>
+                                <button class="btn btn-primary mt-3" id="no-anime-add-btn">
+                                    <i class="bi bi-plus-lg me-1"></i> Add Anime
+                                </button>
                             </div>
                         `;
+                        
+                        document.getElementById('no-anime-add-btn').addEventListener('click', function() {
+                            showView('add-anime-view');
+                            activateNavLink(document.getElementById('add-anime-link'));
+                        });
                     } else {
                         animeList.forEach(anime => {
                             const card = document.createElement('div');
-                            card.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+                            card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
                             card.innerHTML = `
                                 <div class="card h-100 anime-card" data-anime-id="${anime.id}">
                                     <img src="${anime.thumbnail}" class="card-img-top anime-thumbnail" alt="${anime.title}" onerror="this.src='https://via.placeholder.com/350x500?text=No+Image'">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${anime.title}</h5>
+                                    <div class="card-body d-flex flex-column">
+                                        <h5 class="card-title fw-bold text-truncate">${anime.title}</h5>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
                                             ${anime.genres.slice(0, 3).map(genre => 
-                                                `<span class="badge bg-secondary">${genre}</span>`
+                                                `<span class="badge bg-light text-dark">${genre}</span>`
                                             ).join('')}
+                                            ${anime.genres.length > 3 ? `<span class="badge bg-light text-dark">+${anime.genres.length - 3}</span>` : ''}
                                         </div>
-                                        <p class="card-text small">${anime.description ? anime.description.substring(0, 100) + '...' : 'No description available'}</p>
-                                    </div>
-                                    <div class="card-footer d-flex justify-content-between">
-                                        <small class="text-muted">${anime.episodeCount} episodes</small>
-                                        <button class="btn btn-sm btn-primary manage-episodes-btn" data-anime-id="${anime.id}">
-                                            Manage Episodes
-                                        </button>
+                                        <p class="card-text small mb-4">${anime.description ? anime.description.substring(0, 100) + '...' : 'No description available'}</p>
+                                        <div class="mt-auto">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-light text-dark">
+                                                    <i class="bi bi-collection-play me-1"></i> ${anime.episodeCount} episodes
+                                                </span>
+                                                <button class="btn btn-sm btn-primary manage-episodes-btn" data-anime-id="${anime.id}">
+                                                    <i class="bi bi-pencil me-1"></i> Manage
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             `;
@@ -856,10 +1224,7 @@
                                 
                                 // Switch to episodes view
                                 showView('episodes-view');
-                                document.getElementById('episodes-link').classList.add('active');
-                                document.getElementById('dashboard-link').classList.remove('active');
-                                document.getElementById('anime-link').classList.remove('active');
-                                document.getElementById('add-anime-link').classList.remove('active');
+                                activateNavLink(document.getElementById('episodes-link'));
                                 
                                 // Load anime for episodes
                                 loadAnimeForEpisodes(animeId);
@@ -876,7 +1241,7 @@
                 });
         }
         
-                              // Search functionality for AniList
+        // Search functionality for AniList
         const animeSearchInput = document.getElementById('animeSearch');
         const searchResultsContainer = document.getElementById('searchResults');
         
@@ -903,6 +1268,7 @@
                     if (results.length === 0) {
                         searchResultsContainer.innerHTML = `
                             <div class="search-result-item text-center">
+                                <i class="bi bi-search me-1"></i>
                                 No results found for "${searchTerm}"
                             </div>
                         `;
@@ -913,10 +1279,13 @@
                             resultItem.setAttribute('data-anime-id', anime.id);
                             resultItem.innerHTML = `
                                 <div class="d-flex align-items-center">
-                                    <img src="${anime.thumbnail}" alt="${anime.title}" class="me-3" style="width: 50px; height: 70px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/50x70?text=No+Image'">
+                                    <img src="${anime.thumbnail}" alt="${anime.title}" class="me-3 rounded" style="width: 50px; height: 70px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/50x70?text=No+Image'">
                                     <div>
-                                        <div class="fw-bold">${anime.title}</div>
-                                        <small class="text-muted">${anime.episodeCount} eps · ${anime.status}</small>
+                                        <div class="fw-medium">${anime.title}</div>
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <span class="me-2">${anime.episodeCount} eps</span>
+                                            <span class="badge ${getStatusBadgeClass(anime.status)}">${anime.status}</span>
+                                        </div>
                                     </div>
                                 </div>
                             `;
@@ -937,6 +1306,7 @@
                     console.error('Error searching anime:', error);
                     searchResultsContainer.innerHTML = `
                         <div class="search-result-item text-center text-danger">
+                            <i class="bi bi-exclamation-circle me-1"></i>
                             Error searching. Please try again.
                         </div>
                     `;
@@ -944,6 +1314,26 @@
                     hideLoading();
                 });
         });
+        
+        // Helper function to get status badge class
+        function getStatusBadgeClass(status) {
+            status = status.toUpperCase();
+            switch(status) {
+                case 'FINISHED':
+                case 'COMPLETED':
+                    return 'bg-success text-white';
+                case 'RELEASING':
+                case 'AIRING':
+                    return 'bg-primary text-white';
+                case 'NOT_YET_RELEASED':
+                case 'UPCOMING':
+                    return 'bg-info text-white';
+                case 'CANCELLED':
+                    return 'bg-danger text-white';
+                default:
+                    return 'bg-secondary text-white';
+            }
+        }
         
         // Hide search results when clicking outside
         document.addEventListener('click', function(e) {
@@ -975,15 +1365,26 @@
             genresContainer.innerHTML = '';
             anime.genres.forEach(genre => {
                 const badge = document.createElement('span');
-                badge.className = 'badge bg-secondary';
+                badge.className = 'badge bg-light text-dark';
                 badge.textContent = genre;
                 genresContainer.appendChild(badge);
             });
             
             episodesElement.textContent = anime.episodeCount || 'Unknown';
-            statusElement.textContent = anime.status || 'Unknown';
+            
+            statusElement.innerHTML = `<span class="badge ${getStatusBadgeClass(anime.status)}">${anime.status || 'Unknown'}</span>`;
+            
             seasonElement.textContent = anime.season ? `${anime.season} ${anime.startDate?.split('-')[0] || ''}` : 'Unknown';
-            ratingElement.textContent = anime.rating ? `${anime.rating}/10` : 'N/A';
+            
+            if (anime.rating) {
+                const rating = parseFloat(anime.rating);
+                ratingElement.innerHTML = `<div class="d-inline-flex align-items-center">
+                    ${rating.toFixed(1)} 
+                    <i class="bi bi-star-fill ms-1 text-warning"></i>
+                </div>`;
+            } else {
+                ratingElement.textContent = 'N/A';
+            }
             
             detailsContainer.style.display = 'block';
             
@@ -1019,10 +1420,7 @@
                 
                 // Switch to episodes view to add episodes
                 showView('episodes-view');
-                document.getElementById('episodes-link').classList.add('active');
-                document.getElementById('dashboard-link').classList.remove('active');
-                document.getElementById('anime-link').classList.remove('active');
-                document.getElementById('add-anime-link').classList.remove('active');
+                activateNavLink(document.getElementById('episodes-link'));
                 
                 // Load anime for episodes and select the newly added one
                 loadAnimeForEpisodes(animeId);
@@ -1119,6 +1517,11 @@
                         })
                         .then(episodes => {
                             displayEpisodes(episodes, anime);
+                            
+                            // Update episode count in UI
+                            document.getElementById('episodes-count-display').textContent = 
+                                `${episodes.length} episode${episodes.length !== 1 ? 's' : ''}`;
+                                
                             episodeManagementArea.style.display = 'block';
                             hideLoading();
                         });
@@ -1137,7 +1540,8 @@
             
             if (episodes.length === 0) {
                 episodesContainer.innerHTML = `
-                    <div class="text-center py-3">
+                    <div class="text-center py-5">
+                        <i class="bi bi-collection fs-1 text-muted mb-3"></i>
                         <p class="text-muted">No episodes added yet. Add your first episode!</p>
                     </div>
                 `;
@@ -1148,25 +1552,41 @@
             episodes.sort((a, b) => a.number - b.number);
             
             episodes.forEach(episode => {
+                const dateAdded = new Date(episode.dateAdded);
+                const formattedDate = dateAdded.toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
                 const episodeItem = document.createElement('div');
                 episodeItem.className = 'episode-item';
                 episodeItem.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <strong>Episode ${episode.number}: ${episode.title || 'Untitled'}</strong>
-                            <div class="text-muted small">Added: ${new Date(episode.dateAdded).toLocaleDateString()}</div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-primary me-2">${episode.number}</span>
+                                <span class="fw-medium">${episode.title || 'Untitled'}</span>
+                            </div>
+                            <div class="text-muted small mt-1">Added: ${formattedDate}</div>
                         </div>
                         <div>
-                            <button class="btn btn-sm btn-outline-primary edit-episode-btn" data-episode-id="${episode.id}">
+                            <button class="btn btn-sm btn-outline-primary edit-episode-btn me-1" data-episode-id="${episode.id}">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger delete-episode-btn" data-episode-id="${episode.id}" data-episode-number="${episode.number}" data-episode-title="${episode.title || 'Untitled'}">
+                            <button class="btn btn-sm btn-outline-danger delete-episode-btn" 
+                                data-episode-id="${episode.id}" 
+                                data-episode-number="${episode.number}" 
+                                data-episode-title="${episode.title || 'Untitled'}">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
                     </div>
                     <div class="mt-2">
-                        <small class="text-muted">Server URL: ${episode.server2Url.substring(0, 50)}${episode.server2Url.length > 50 ? '...' : ''}</small>
+                        <small class="text-muted d-block text-truncate">
+                            <i class="bi bi-link-45deg me-1"></i> 
+                            ${episode.server2Url || 'No server URL'}
+                        </small>
                     </div>
                 `;
                 episodesContainer.appendChild(episodeItem);
@@ -1264,6 +1684,11 @@
                             })
                             .then(anime => {
                                 displayEpisodes(episodes, anime);
+                                
+                                // Update episode count
+                                document.getElementById('episodes-count-display').textContent = 
+                                    `${episodes.length} episode${episodes.length !== 1 ? 's' : ''}`;
+                                
                                 hideLoading();
                             });
                     });
@@ -1413,6 +1838,11 @@
                             })
                             .then(anime => {
                                 displayEpisodes(episodes, anime);
+                                
+                                // Update episode count
+                                document.getElementById('episodes-count-display').textContent = 
+                                    `${episodes.length} episode${episodes.length !== 1 ? 's' : ''}`;
+                                
                                 hideLoading();
                             });
                     });
@@ -1432,6 +1862,11 @@
             document.getElementById('parseBulkEpisodesBtn').addEventListener('click', function() {
                 const bulkHtml = document.getElementById('bulkEpisodeHtml').value;
                 const server1Default = document.getElementById('server1DefaultValue').value;
+                
+                if (!bulkHtml.trim()) {
+                    showError('Please paste the HTML with episode options');
+                    return;
+                }
                 
                 // Create a temporary container to parse the HTML
                 const tempContainer = document.createElement('div');
@@ -1457,7 +1892,7 @@
                 parsedEpisodes = Array.from(options).map(option => {
                     return {
                         number: parseInt(option.value, 10),
-                        title: option.textContent || `Episode ${option.value}`,
+                        title: option.textContent.trim() || `Episode ${option.value}`,
                         iframeSrc: option.getAttribute('data-server1') || server1Default || "",
                         server2Url: option.getAttribute('data-server2') || ""
                     };
@@ -1475,6 +1910,11 @@
             
             // Upload button click handler
             document.getElementById('uploadBulkEpisodesBtn').addEventListener('click', function() {
+                if (parsedEpisodes.length === 0) {
+                    showError('No episodes to upload. Parse HTML first.');
+                    return;
+                }
+                
                 // Show preview modal
                 const previewTable = document.getElementById('bulkEpisodePreviewTable');
                 previewTable.innerHTML = '';
@@ -1560,6 +2000,9 @@
                                     <div class="spinner-border text-light mb-3" role="status"></div>
                                     <div>Uploading episodes: ${uploaded + failed}/${parsedEpisodes.length}</div>
                                     <div class="small mt-2">${uploaded} uploaded, ${failed} failed</div>
+                                    <div class="progress mt-3" style="height: 8px; width: 250px; margin: 0 auto;">
+                                        <div class="progress-bar bg-success" style="width: ${((uploaded + failed) / parsedEpisodes.length) * 100}%"></div>
+                                    </div>
                                 </div>
                             `;
                             // Process next episode after a small delay
@@ -1603,6 +2046,9 @@
                                         <div class="text-center text-white">
                                             <div class="spinner-border text-light mb-3" role="status"></div>
                                             <div>Deleting existing episodes: ${deletedCount}/${totalToDelete}</div>
+                                            <div class="progress mt-3" style="height: 8px; width: 250px; margin: 0 auto;">
+                                                <div class="progress-bar bg-danger" style="width: ${(deletedCount / totalToDelete) * 100}%"></div>
+                                            </div>
                                         </div>
                                     `;
                                     // Delete next episode
@@ -1653,6 +2099,10 @@
                         })
                         .then(anime => {
                             displayEpisodes(episodes, anime);
+                            
+                            // Update episode count
+                            document.getElementById('episodes-count-display').textContent = 
+                                `${episodes.length} episode${episodes.length !== 1 ? 's' : ''}`;
                         });
                 })
                 .catch(error => {
@@ -1661,18 +2111,11 @@
                 });
         }
         
-        // Initialize the bulk uploader when episodes tab is shown
-        document.getElementById('episodes-link').addEventListener('click', function() {
-            setTimeout(() => {
-                initBulkUploader();
-            }, 500);
-        });
-
-        // Initialize the app - load dashboard data and check server status
+        // Initialize the bulk uploader when the DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            initBulkUploader();
             loadDashboardData();
             checkServerStatus();
-            initBulkUploader();
         });
     </script>
 </body>
