@@ -787,34 +787,9 @@ app.delete('/api/anime/:id', (req, res) => {
 
 // Enhanced search with pagination and filtering
 app.get('/api/search', async (req, res) => {
-  const { query = "", page = 1, perPage = 10, genre, season, year, status } = req.query;
-  
-  // Accept at least one parameter but make it more forgiving
-  if (!query && !genre && !season && !year && !status) {
-    // Return trending anime instead of error for empty search
-    try {
-      const response = await axios.post(ANILIST_API, {
-        query: searchAnimeQuery,
-        variables: { 
-          page: parseInt(page),
-          perPage: parseInt(perPage),
-          sort: "POPULARITY_DESC"
-        }
-      });
-      
-      const searchResults = {
-        pageInfo: response.data.data.Page.pageInfo,
-        results: formatSearchResults(response.data)
-      };
-      
-      return res.json(searchResults);
-    } catch (error) {
-      console.error("Error fetching popular anime for empty search:", error);
-      return res.status(500).json({ error: 'Failed to fetch popular anime' });
-    }
-  }
-  
   try {
+    const { query, page = 1, perPage = 10, genre, season, year, status } = req.query;
+    
     // Convert season string to enum value
     let seasonEnum = null;
     if (season) {
@@ -850,6 +825,11 @@ app.get('/api/search', async (req, res) => {
       }
     });
     
+    // Make sure we have results in the response
+    if (!response.data || !response.data.data || !response.data.data.Page) {
+      throw new Error('Invalid response from AniList API');
+    }
+    
     const searchResults = {
       pageInfo: response.data.data.Page.pageInfo,
       results: formatSearchResults(response.data)
@@ -860,7 +840,7 @@ app.get('/api/search', async (req, res) => {
     console.error("Error searching anime:", error);
     res.status(500).json({ 
       error: 'Failed to search anime',
-      pageInfo: { currentPage: 1, lastPage: 1, hasNextPage: false, perPage: parseInt(perPage) },
+      pageInfo: { currentPage: 1, lastPage: 1, hasNextPage: false, perPage: parseInt(req.query.perPage || 10) },
       results: []
     });
   }
