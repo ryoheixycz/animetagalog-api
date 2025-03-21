@@ -1,12 +1,9 @@
-// server.js - Extended with scheduled anime functionality and high-quality images
-
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require('body-parser');
-const cron = require('node-cron');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -792,8 +789,8 @@ app.get('/api/genres', async (req, res) => {
   }
 });
 
-// Schedule checker function - run this periodically to check for upcoming anime
-const checkScheduledAnime = async () => {
+// Schedule checker function - manual function instead of cron
+function checkScheduledAnime() {
   console.log("Checking scheduled anime...");
   const scheduledAnime = readData(SCHEDULED_ANIME_FILE);
   const now = new Date();
@@ -826,10 +823,7 @@ const checkScheduledAnime = async () => {
       writeData(CUSTOM_ANIME_FILE, customAnimeList);
     }
   }
-};
-
-// Set up scheduler to run every day at midnight
-cron.schedule('0 0 * * *', checkScheduledAnime);
+}
 
 // Export data
 app.get('/api/export', (req, res) => {
@@ -865,6 +859,9 @@ app.listen(PORT, HOST, () => {
   
   // Run scheduled check on startup
   checkScheduledAnime();
+  
+  // Simple interval instead of cron job - check once every day (86400000 ms)
+  setInterval(checkScheduledAnime, 86400000);
 });
 
 // Handle errors gracefully
