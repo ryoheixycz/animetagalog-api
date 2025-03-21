@@ -92,10 +92,21 @@
         .poster-overlay {
             background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
         }
-
+        
         .active-nav {
             color: white;
             background-color: rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Mobile specific styles */
+        @media (max-width: 640px) {
+            .mobile-nav {
+                padding-bottom: 70px; /* Add space for bottom navigation */
+            }
+            
+            .anime-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
     </style>
 </head>
@@ -112,7 +123,7 @@
     <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
     <!-- Main Container -->
-    <div class="flex flex-col sm:flex-row min-h-screen">
+    <div class="flex flex-col sm:flex-row min-h-screen mobile-nav">
         <!-- Mobile Navigation Bar -->
         <div class="sm:hidden fixed bottom-0 left-0 right-0 bg-dark-lighter border-t border-gray-700 z-30">
             <div class="flex justify-around py-2">
@@ -219,9 +230,9 @@
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-bold">Featured Anime</h2>
-                        <button class="text-sm text-accent hover:text-accent-hover transition-colors">View All</button>
+                        <button class="text-sm text-accent hover:text-accent-hover transition-colors" data-view="trending">View All</button>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="featuredAnime">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 anime-grid" id="featuredAnime">
                         <!-- Anime cards will be populated here -->
                         <!-- Loading skeletons -->
                         <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden">
@@ -252,20 +263,6 @@
                                 <div class="h-3 bg-gray-700 rounded w-1/2"></div>
                             </div>
                         </div>
-                        <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden hidden lg:block">
-                            <div class="bg-gray-700 h-56 w-full"></div>
-                            <div class="p-3">
-                                <div class="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                                <div class="h-3 bg-gray-700 rounded w-1/2"></div>
-                            </div>
-                        </div>
-                        <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden hidden xl:block">
-                            <div class="bg-gray-700 h-56 w-full"></div>
-                            <div class="p-3">
-                                <div class="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                                <div class="h-3 bg-gray-700 rounded w-1/2"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -273,9 +270,9 @@
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-bold">Recent Updates</h2>
-                        <button class="text-sm text-accent hover:text-accent-hover transition-colors">View All</button>
+                        <button class="text-sm text-accent hover:text-accent-hover transition-colors" data-view="library">View All</button>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="recentUpdates">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 anime-grid" id="recentUpdates">
                         <!-- Anime cards will be populated here -->
                         <!-- Loading skeletons (same as above) -->
                         <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden">
@@ -313,16 +310,30 @@
             <!-- Trending View -->
             <section id="trendingView" class="hidden p-4 sm:p-6 animate-slide-in">
                 <h1 class="text-2xl font-bold mb-4">Trending Anime</h1>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <button class="px-3 py-1 bg-accent text-white rounded-full text-sm">All</button>
-                    <button class="px-3 py-1 bg-dark-card text-gray-300 hover:bg-accent hover:text-white transition-colors rounded-full text-sm">This Season</button>
-                    <button class="px-3 py-1 bg-dark-card text-gray-300 hover:bg-accent hover:text-white transition-colors rounded-full text-sm">Upcoming</button>
-                    <button class="px-3 py-1 bg-dark-card text-gray-300 hover:bg-accent hover:text-white transition-colors rounded-full text-sm">Popular</button>
+                <div class="flex flex-wrap gap-2 mb-4 overflow-x-auto scrollbar-hide pb-2">
+                    <button class="px-3 py-1 bg-accent text-white rounded-full text-sm whitespace-nowrap">All</button>
+                    <button class="px-3 py-1 bg-dark-card text-gray-300 hover:bg-accent hover:text-white transition-colors rounded-full text-sm whitespace-nowrap">This Season</button>
+                    <button class="px-3 py-1 bg-dark-card text-gray-300 hover:bg-accent hover:text-white transition-colors rounded-full text-sm whitespace-nowrap">Upcoming</button>
+                    <button class="px-3 py-1 bg-dark-card text-gray-300 hover:bg-accent hover:text-white transition-colors rounded-full text-sm whitespace-nowrap">Popular</button>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="trendingAnime">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 anime-grid" id="trendingAnime">
                     <!-- Anime cards will be populated here -->
                     <!-- Loading skeletons (similar to home view) -->
+                    <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden">
+                        <div class="bg-gray-700 h-56 w-full"></div>
+                        <div class="p-3">
+                            <div class="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                            <div class="h-3 bg-gray-700 rounded w-1/2"></div>
+                        </div>
+                    </div>
+                    <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden">
+                        <div class="bg-gray-700 h-56 w-full"></div>
+                        <div class="p-3">
+                            <div class="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                            <div class="h-3 bg-gray-700 rounded w-1/2"></div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -334,9 +345,9 @@
                     <input type="text" id="searchInput" class="w-full bg-dark-card border border-gray-700 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Search by title...">
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-4 overflow-x-auto scrollbar-hide">
                     <h3 class="text-lg font-semibold mb-2">Filters</h3>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap gap-2 pb-2">
                         <select id="genreFilter" class="bg-dark-card border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent">
                             <option value="">Genre (All)</option>
                             <!-- Will be populated dynamically -->
@@ -355,14 +366,14 @@
                         <select id="statusFilter" class="bg-dark-card border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-accent">
                             <option value="">Status (All)</option>
                             <option value="RELEASING">Currently Airing</option>
-                            <option value="FINISHED">Finished</option>
+                            <option value="FINISHED">Completed</option>
                             <option value="NOT_YET_RELEASED">Upcoming</option>
                             <option value="CANCELLED">Cancelled</option>
                         </select>
                     </div>
                 </div>
 
-                <div id="searchResults" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div id="searchResults" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 anime-grid">
                     <div class="col-span-full text-center py-12 text-gray-400">
                         <i class="ph ph-magnifying-glass text-5xl mb-3"></i>
                         <p>Search for anime to get started</p>
@@ -394,8 +405,22 @@
                         Explore Anime
                     </button>
                 </div>
-                <div id="libraryContent" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div id="libraryContent" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 anime-grid">
                     <!-- Library items will be populated here -->
+                    <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden">
+                        <div class="bg-gray-700 h-56 w-full"></div>
+                        <div class="p-3">
+                            <div class="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                            <div class="h-3 bg-gray-700 rounded w-1/2"></div>
+                        </div>
+                    </div>
+                    <div class="animate-pulse bg-dark-card rounded-lg overflow-hidden">
+                        <div class="bg-gray-700 h-56 w-full"></div>
+                        <div class="p-3">
+                            <div class="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                            <div class="h-3 bg-gray-700 rounded w-1/2"></div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -403,7 +428,7 @@
             <section id="scheduleView" class="hidden p-4 sm:p-6 animate-slide-in">
                 <h1 class="text-2xl font-bold mb-4">Schedule</h1>
                 
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                     <button id="addToScheduleBtn" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors">
                         <i class="ph ph-plus mr-1"></i> Add to Schedule
                     </button>
@@ -427,6 +452,21 @@
                 
                 <div id="scheduleContent">
                     <!-- Schedule items will be populated here -->
+                    <div class="animate-pulse">
+                        <div class="h-6 bg-gray-700 rounded mb-3 w-36"></div>
+                        <div class="space-y-3">
+                            <div class="bg-dark-card rounded-lg p-4 animate-pulse">
+                                <div class="flex">
+                                    <div class="bg-gray-700 h-24 w-16 rounded"></div>
+                                    <div class="ml-3 flex-1">
+                                        <div class="h-5 bg-gray-700 rounded w-3/4 mb-2"></div>
+                                        <div class="h-4 bg-gray-700 rounded w-1/2 mb-2"></div>
+                                        <div class="h-8 bg-gray-700 rounded w-24 mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -434,6 +474,47 @@
             <section id="animeDetailView" class="hidden animate-slide-in">
                 <div id="animeDetailContent">
                     <!-- Anime details will be populated here -->
+                    <!-- Loading skeleton -->
+                    <div class="animate-pulse">
+                        <div class="h-64 sm:h-80 bg-gray-700"></div>
+                        <div class="container mx-auto px-4 -mt-24 relative z-10">
+                            <div class="flex flex-col sm:flex-row">
+                                <div class="sm:w-48 mb-4 sm:mb-0">
+                                    <div class="bg-gray-700 h-64 w-48 mx-auto rounded-lg"></div>
+                                </div>
+                                <div class="sm:ml-6 sm:mt-24">
+                                    <div class="h-8 bg-gray-700 rounded w-3/4 mb-2"></div>
+                                    <div class="flex flex-wrap mt-2 gap-1">
+                                        <div class="h-6 bg-gray-700 rounded w-16"></div>
+                                        <div class="h-6 bg-gray-700 rounded w-20"></div>
+                                        <div class="h-6 bg-gray-700 rounded w-14"></div>
+                                    </div>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                        <div>
+                                            <div class="h-4 bg-gray-700 rounded w-14 mb-1"></div>
+                                            <div class="h-5 bg-gray-700 rounded w-20"></div>
+                                        </div>
+                                        <div>
+                                            <div class="h-4 bg-gray-700 rounded w-14 mb-1"></div>
+                                            <div class="h-5 bg-gray-700 rounded w-20"></div>
+                                        </div>
+                                        <div>
+                                            <div class="h-4 bg-gray-700 rounded w-14 mb-1"></div>
+                                            <div class="h-5 bg-gray-700 rounded w-20"></div>
+                                        </div>
+                                        <div>
+                                            <div class="h-4 bg-gray-700 rounded w-14 mb-1"></div>
+                                            <div class="h-5 bg-gray-700 rounded w-20"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2 mt-4">
+                                        <div class="h-10 bg-gray-700 rounded w-36"></div>
+                                        <div class="h-10 bg-gray-700 rounded w-36"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
@@ -452,7 +533,7 @@
                 <div class="mb-4">
                     <label for="scheduleAnimeSearch" class="block text-sm font-medium mb-1">Search Anime</label>
                     <input type="text" id="scheduleAnimeSearch" class="w-full bg-dark-card border border-gray-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Type to search...">
-                    <div id="scheduleSearchResults" class="mt-2 bg-dark-card rounded-lg max-h-48 overflow-y-auto hidden">
+                    <div id="scheduleSearchResults" class="mt-2 bg-dark-card rounded-lg max-h-48 overflow-y-auto hidden scrollbar-hide">
                         <!-- Search results will be populated here -->
                     </div>
                 </div>
@@ -517,6 +598,10 @@
             
             // Setup schedule modal
             setupScheduleModal();
+
+            // Set default date in schedule modal to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('scheduleDate').value = today;
         });
         
         // Helper function to show/hide loading overlay
@@ -531,7 +616,7 @@
         // Show a toast notification
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.classList.add('bg-dark-card', 'text-white', 'rounded-lg', 'shadow-lg', 'px-4', 'py-3', 'flex', 'items-center');
+            toast.classList.add('bg-dark-card', 'text-white', 'rounded-lg', 'shadow-lg', 'px-4', 'py-3', 'flex', 'items-center', 'max-w-xs', 'sm:max-w-md');
             
             let icon = '';
             if (type === 'success') {
@@ -676,7 +761,7 @@
             })
             .catch(error => {
                 console.error('Error loading home data:', error);
-                showToast('Failed to load home data', 'error');
+                showToast('Failed to load home data. Please try refreshing.', 'error');
                 toggleLoading(false);
             });
         }
@@ -719,6 +804,16 @@
             const container = document.getElementById('featuredAnime');
             container.innerHTML = '';
             
+            if (!animeList || animeList.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="ph ph-list text-4xl text-gray-500 mb-2"></i>
+                        <p class="text-gray-400">No featured anime found</p>
+                    </div>
+                `;
+                return;
+            }
+            
             animeList.forEach(anime => {
                 const card = createAnimeCard(anime);
                 container.appendChild(card);
@@ -730,7 +825,7 @@
             const container = document.getElementById('recentUpdates');
             container.innerHTML = '';
             
-            if (animeList.length === 0) {
+            if (!animeList || animeList.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full text-center py-8">
                         <i class="ph ph-clock-counter-clockwise text-4xl text-gray-500 mb-2"></i>
@@ -758,9 +853,10 @@
                 let badgeClass = '';
                 let statusText = '';
                 
-                switch(anime.status) {
+                switch(anime.status.toUpperCase()) {
                     case 'RELEASING':
                     case 'CURRENTLY':
+                    case 'AIRING':
                         badgeClass = 'bg-green-500';
                         statusText = 'Airing';
                         break;
@@ -790,7 +886,6 @@
             let airingInfo = '';
             if (anime.nextAiring) {
                 const nextEpisode = anime.nextAiring.episode;
-                const airingDate = new Date(anime.nextAiring.airingAt);
                 const timeUntil = getTimeUntilAiring(anime.nextAiring.timeUntilAiring);
                 
                 airingInfo = `<div class="text-xs text-gray-400 mt-1">Ep ${nextEpisode} in ${timeUntil}</div>`;
@@ -798,7 +893,7 @@
             
             card.innerHTML = `
                 <div class="relative">
-                    <img src="${anime.thumbnail}" alt="${anime.title}" class="anime-cover w-full">
+                    <img src="${anime.thumbnail}" alt="${anime.title}" class="anime-cover w-full" onerror="this.src='https://via.placeholder.com/500x750?text=No+Image'">
                     ${statusBadge}
                 </div>
                 <div class="p-3">
@@ -861,6 +956,12 @@
                 })
                 .catch(error => {
                     console.error('Error loading genres:', error);
+                    const container = document.getElementById('genresList');
+                    container.innerHTML = `
+                        <div class="text-center py-2 text-gray-400">
+                            <p>Failed to load genres</p>
+                        </div>
+                    `;
                 });
         }
         
@@ -874,7 +975,7 @@
                     const container = document.getElementById('trendingAnime');
                     container.innerHTML = '';
                     
-                    if (data.length === 0) {
+                    if (!data || data.length === 0) {
                         container.innerHTML = `
                             <div class="col-span-full text-center py-12">
                                 <i class="ph ph-trend-up text-5xl text-gray-500 mb-3"></i>
@@ -892,8 +993,17 @@
                 })
                 .catch(error => {
                     console.error('Error loading trending data:', error);
-                    showToast('Failed to load trending anime', 'error');
+                    showToast('Failed to load trending anime. Please try again.', 'error');
                     toggleLoading(false);
+                    
+                    const container = document.getElementById('trendingAnime');
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <i class="ph ph-warning text-5xl text-red-500 mb-3"></i>
+                            <p class="text-gray-400">Error loading trending anime</p>
+                            <button class="mt-4 px-4 py-2 bg-accent text-white rounded-lg" onclick="loadTrendingData()">Try Again</button>
+                        </div>
+                    `;
                 });
         }
         
@@ -907,7 +1017,7 @@
                     const emptyState = document.getElementById('libraryEmptyState');
                     const content = document.getElementById('libraryContent');
                     
-                    if (data.length === 0) {
+                    if (!data || data.length === 0) {
                         emptyState.classList.remove('hidden');
                         content.innerHTML = '';
                     } else {
@@ -924,8 +1034,19 @@
                 })
                 .catch(error => {
                     console.error('Error loading library data:', error);
-                    showToast('Failed to load library', 'error');
+                    showToast('Failed to load library. Please try again.', 'error');
                     toggleLoading(false);
+                    
+                    const emptyState = document.getElementById('libraryEmptyState');
+                    const content = document.getElementById('libraryContent');
+                    emptyState.classList.add('hidden');
+                    content.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <i class="ph ph-warning text-5xl text-red-500 mb-3"></i>
+                            <p class="text-gray-400">Error loading your library</p>
+                            <button class="mt-4 px-4 py-2 bg-accent text-white rounded-lg" onclick="loadLibraryData()">Try Again</button>
+                        </div>
+                    `;
                 });
         }
         
@@ -939,7 +1060,7 @@
                     const emptyState = document.getElementById('scheduleEmptyState');
                     const content = document.getElementById('scheduleContent');
                     
-                    if (data.length === 0) {
+                    if (!data || data.length === 0) {
                         emptyState.classList.remove('hidden');
                         content.innerHTML = '';
                     } else {
@@ -971,8 +1092,19 @@
                 })
                 .catch(error => {
                     console.error('Error loading schedule data:', error);
-                    showToast('Failed to load schedule', 'error');
+                    showToast('Failed to load schedule. Please try again.', 'error');
                     toggleLoading(false);
+                    
+                    const emptyState = document.getElementById('scheduleEmptyState');
+                    const content = document.getElementById('scheduleContent');
+                    emptyState.classList.add('hidden');
+                    content.innerHTML = `
+                        <div class="text-center py-12">
+                            <i class="ph ph-warning text-5xl text-red-500 mb-3"></i>
+                            <p class="text-gray-400">Error loading your schedule</p>
+                            <button class="mt-4 px-4 py-2 bg-accent text-white rounded-lg" onclick="loadScheduleData()">Try Again</button>
+                        </div>
+                    `;
                 });
         }
         
@@ -1012,11 +1144,11 @@
         function createScheduleItem(item) {
             return `
                 <div class="bg-dark-card rounded-lg overflow-hidden flex" data-schedule-id="${item.id}" data-anime-id="${item.anilistId}">
-                    <img src="${item.thumbnail}" alt="${item.title}" class="h-24 w-16 object-cover">
+                    <img src="${item.thumbnail}" alt="${item.title}" class="h-24 w-16 object-cover" onerror="this.src='https://via.placeholder.com/225x335?text=No+Image'">
                     <div class="flex-1 p-3 flex flex-col">
                         <h4 class="font-medium">${item.title}</h4>
                         ${item.customNote ? `<p class="text-sm text-gray-400 mt-1">${item.customNote}</p>` : ''}
-                        <div class="mt-auto flex justify-between items-center">
+                        <div class="mt-auto flex justify-between items-center flex-wrap gap-2">
                             <button class="text-accent hover:text-accent-hover transition-colors text-sm" onclick="showAnimeDetails('${item.anilistId}')">
                                 <i class="ph ph-info mr-1"></i> Details
                             </button>
@@ -1165,7 +1297,7 @@
                         
                         // Update pagination
                         document.getElementById('currentPage').textContent = data.pageInfo.currentPage;
-                        document.getElementById('totalPages').textContent = data.pageInfo.lastPage;
+                        document.getElementById('totalPages').textContent = data.pageInfo.lastPage || 1;
                         paginationContainer.classList.remove('hidden');
                         
                         // Disable/enable prev/next buttons
@@ -1190,8 +1322,17 @@
                 })
                 .catch(error => {
                     console.error('Error searching anime:', error);
-                    showToast('Failed to search anime', 'error');
+                    showToast('Failed to search anime. Please try again.', 'error');
                     toggleLoading(false);
+                    
+                    const resultsContainer = document.getElementById('searchResults');
+                    resultsContainer.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <i class="ph ph-warning text-5xl text-red-500 mb-3"></i>
+                            <p class="text-gray-400">Error while searching</p>
+                            <button class="mt-4 px-4 py-2 bg-accent text-white rounded-lg" onclick="searchAnime(1)">Try Again</button>
+                        </div>
+                    `;
                 });
         }
         
@@ -1211,11 +1352,21 @@
             
             // Load anime details
             fetch(`${API_URL}/anime/${animeId}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to fetch anime details');
+                    }
+                    return res.json();
+                })
                 .then(anime => {
                     // Get episodes
                     return fetch(`${API_URL}/anime/${animeId}/episodes`)
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) {
+                                return []; // Return empty array if no episodes
+                            }
+                            return res.json();
+                        })
                         .then(episodes => {
                             renderAnimeDetails(anime, episodes);
                             toggleLoading(false);
@@ -1225,6 +1376,17 @@
                     console.error('Error loading anime details:', error);
                     showToast('Failed to load anime details', 'error');
                     toggleLoading(false);
+                    
+                    // Show error state
+                    document.getElementById('animeDetailContent').innerHTML = `
+                        <div class="h-64 sm:h-80 bg-gradient-to-r from-dark-lighter to-dark-card flex items-center justify-center">
+                            <div class="text-center">
+                                <i class="ph ph-warning text-5xl text-red-500 mb-3"></i>
+                                <p class="text-gray-400">Failed to load anime details</p>
+                                <button class="mt-4 px-4 py-2 bg-accent text-white rounded-lg" onclick="goBack()">Go Back</button>
+                            </div>
+                        </div>
+                    `;
                 });
         }
         
@@ -1234,7 +1396,7 @@
             
             // Format episodes count
             let episodesInfo = anime.episodeCount;
-            if (anime.episodeCount === "Unknown" && anime.status === "RELEASING") {
+            if (anime.episodeCount === "Unknown" && anime.status === "Airing") {
                 episodesInfo = "Ongoing";
             }
             
@@ -1249,14 +1411,14 @@
                 relatedAnimeHTML = `
                     <div class="mt-8">
                         <h3 class="text-lg font-medium mb-3">Related Anime</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                            ${anime.relations.slice(0, 5).map(relation => `
-                                <div class="bg-dark-card rounded overflow-hidden">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            ${anime.relations.slice(0, 4).map(relation => `
+                                <div class="bg-dark-card rounded overflow-hidden cursor-pointer" onclick="showAnimeDetails('${relation.id}')">
                                     <div class="flex items-center p-2">
-                                        <img src="${relation.thumbnail}" alt="${relation.title}" class="w-10 h-14 object-cover rounded mr-2">
+                                        <img src="${relation.thumbnail || 'https://via.placeholder.com/225x335?text=No+Image'}" alt="${relation.title}" class="w-10 h-14 object-cover rounded mr-2" onerror="this.src='https://via.placeholder.com/225x335?text=No+Image'">
                                         <div>
                                             <div class="text-sm font-medium line-clamp-1">${relation.title}</div>
-                                            <div class="text-xs text-gray-400">${relation.type}</div>
+                                            <div class="text-xs text-gray-400">${relation.type || 'Related'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1278,7 +1440,7 @@
                         <div class="grid gap-3">
                             ${episodes.map(episode => `
                                 <div class="bg-dark-card rounded-lg p-3">
-                                    <div class="flex justify-between items-center">
+                                    <div class="flex justify-between items-center flex-wrap gap-2">
                                         <div>
                                             <span class="bg-accent text-white text-xs px-2 py-1 rounded mr-2">EP ${episode.number}</span>
                                             <span>${episode.title || `Episode ${episode.number}`}</span>
@@ -1305,11 +1467,8 @@
             }
             
             // Determine if in library
-            fetch(`${API_URL}/anime`)
-                .then(res => res.json())
-                .then(libraryAnime => {
-                    const isInLibrary = libraryAnime.some(a => a.id === anime.id);
-                    
+            checkIfInLibrary(anime.id)
+                .then(isInLibrary => {
                     // Create the detail view
                     container.innerHTML = `
                         <div class="relative h-48 sm:h-64 md:h-80 bg-gradient-to-b from-dark-lighter to-dark">
@@ -1324,7 +1483,7 @@
                         <div class="container mx-auto px-4 -mt-24 relative z-10">
                             <div class="flex flex-col sm:flex-row">
                                 <div class="sm:w-48 sm:shrink-0 mb-4 sm:mb-0">
-                                    <img src="${anime.thumbnail}" alt="${anime.title}" class="rounded-lg shadow-lg w-48 mx-auto">
+                                    <img src="${anime.thumbnail}" alt="${anime.title}" class="rounded-lg shadow-lg w-48 mx-auto" onerror="this.src='https://via.placeholder.com/500x750?text=No+Image'">
                                 </div>
                                 <div class="sm:ml-6 sm:mt-24">
                                     <h1 class="text-2xl sm:text-3xl font-bold">${anime.title}</h1>
@@ -1351,7 +1510,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="flex space-x-2 mt-4">
+                                    <div class="flex flex-wrap gap-2 mt-4">
                                         ${isInLibrary ? 
                                             `<button id="removeFromLibraryBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center" onclick="removeFromLibrary('${anime.id}')">
                                                 <i class="ph ph-x mr-1"></i> Remove from Library
@@ -1379,10 +1538,23 @@
                 });
         }
         
+        // Check if anime is in library
+        function checkIfInLibrary(animeId) {
+            return fetch(`${API_URL}/anime`)
+                .then(res => res.json())
+                .then(libraryAnime => {
+                    return libraryAnime.some(a => a.id === animeId);
+                })
+                .catch(error => {
+                    console.error('Error checking library status:', error);
+                    return false;
+                });
+        }
+        
         // Go back from anime details
         function goBack() {
-            // This will go back to the previous view
-            history.back();
+            // This will go back to the previous view in browser history
+            window.history.back();
             
             // As a fallback, go to home view if history.back() doesn't work
             setTimeout(() => {
@@ -1403,19 +1575,27 @@
                 },
                 body: JSON.stringify({ anilistId: animeId })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Failed to add to library');
+                }
+                return res.json();
+            })
             .then(data => {
                 showToast('Added to library', 'success');
-                document.getElementById('addToLibraryBtn').outerHTML = `
-                    <button id="removeFromLibraryBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center" onclick="removeFromLibrary('${animeId}')">
-                        <i class="ph ph-x mr-1"></i> Remove from Library
-                    </button>
-                `;
+                const addBtn = document.getElementById('addToLibraryBtn');
+                if (addBtn) {
+                    addBtn.outerHTML = `
+                        <button id="removeFromLibraryBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center" onclick="removeFromLibrary('${animeId}')">
+                            <i class="ph ph-x mr-1"></i> Remove from Library
+                        </button>
+                    `;
+                }
                 toggleLoading(false);
             })
             .catch(error => {
                 console.error('Error adding to library:', error);
-                showToast('Failed to add to library', 'error');
+                showToast('Failed to add to library. Please try again.', 'error');
                 toggleLoading(false);
             });
         }
@@ -1428,14 +1608,22 @@
                 fetch(`${API_URL}/anime/${animeId}`, {
                     method: 'DELETE'
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to remove from library');
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     showToast('Removed from library', 'success');
-                    document.getElementById('removeFromLibraryBtn').outerHTML = `
-                        <button id="addToLibraryBtn" class="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-colors flex items-center" onclick="addToLibrary('${animeId}')">
-                            <i class="ph ph-plus mr-1"></i> Add to Library
-                        </button>
-                    `;
+                    const removeBtn = document.getElementById('removeFromLibraryBtn');
+                    if (removeBtn) {
+                        removeBtn.outerHTML = `
+                            <button id="addToLibraryBtn" class="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-colors flex items-center" onclick="addToLibrary('${animeId}')">
+                                <i class="ph ph-plus mr-1"></i> Add to Library
+                            </button>
+                        `;
+                    }
                     toggleLoading(false);
                 })
                 .catch(error => {
@@ -1450,7 +1638,12 @@
         function scheduleAnime(animeId) {
             // Open schedule modal with this anime preselected
             fetch(`${API_URL}/anime/${animeId}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to fetch anime details');
+                    }
+                    return res.json();
+                })
                 .then(anime => {
                     openScheduleModal(anime);
                 })
@@ -1498,7 +1691,7 @@
                                 const item = document.createElement('div');
                                 item.className = 'flex items-center p-2 hover:bg-dark-lighter cursor-pointer';
                                 item.innerHTML = `
-                                    <img src="${anime.thumbnail}" alt="${anime.title}" class="w-10 h-14 object-cover rounded mr-2">
+                                    <img src="${anime.thumbnail}" alt="${anime.title}" class="w-10 h-14 object-cover rounded mr-2" onerror="this.src='https://via.placeholder.com/225x335?text=No+Image'">
                                     <div>
                                         <div class="font-medium line-clamp-1">${anime.title}</div>
                                         <div class="text-xs text-gray-400">${anime.episodeCount} episodes · ${anime.status}</div>
@@ -1578,6 +1771,9 @@
         function selectAnimeForSchedule(anime) {
             const selectedAnimeContainer = document.getElementById('selectedAnimeForSchedule');
             document.getElementById('selectedAnimeImage').src = anime.thumbnail;
+            document.getElementById('selectedAnimeImage').onerror = function() {
+                this.src = 'https://via.placeholder.com/225x335?text=No+Image';
+            };
             document.getElementById('selectedAnimeTitle').textContent = anime.title;
             document.getElementById('selectedAnimeInfo').textContent = `${anime.episodeCount} episodes · ${anime.status}`;
             
@@ -1617,7 +1813,12 @@
                     customNote: notes
                 })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Failed to schedule anime');
+                }
+                return res.json();
+            })
             .then(data => {
                 showToast('Anime scheduled successfully', 'success');
                 closeScheduleModal();
