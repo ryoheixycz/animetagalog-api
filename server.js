@@ -11,8 +11,9 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Data file paths
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -60,7 +61,7 @@ const writeData = (filePath, data) => {
 // AniList GraphQL API
 const ANILIST_API = 'https://graphql.anilist.co';
 
-// GraphQL query to get anime details - Enhanced with higher quality images
+// GraphQL query to get anime details with enhanced fields
 const getAnimeQuery = `
 query ($id: Int) {
   Media(id: $id, type: ANIME) {
@@ -154,7 +155,7 @@ query ($id: Int) {
 `;
 
 const searchAnimeQuery = `
-query ($search: String, $page: Int, $perPage: Int) {
+query ($search: String, $page: Int, $perPage: Int, $genre: String, $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
   Page(page: $page, perPage: $perPage) {
     pageInfo {
       total
@@ -163,7 +164,7 @@ query ($search: String, $page: Int, $perPage: Int) {
       hasNextPage
       perPage
     }
-    media(search: $search, type: ANIME) {
+    media(search: $search, genre: $genre, season: $season, seasonYear: $seasonYear, status: $status, type: ANIME, sort: POPULARITY_DESC) {
       id
       title {
         english
@@ -245,12 +246,25 @@ const formatAnimeData = (anilistData) => {
     return null;
   };
   
+  // Better status formatting
+  const formatStatus = (status) => {
+    if (!status) return "Unknown";
+    switch (status) {
+      case "FINISHED": return "Completed";
+      case "RELEASING": return "Airing";
+      case "NOT_YET_RELEASED": return "Upcoming";
+      case "CANCELLED": return "Cancelled";
+      case "HIATUS": return "On Hiatus";
+      default: return status;
+    }
+  };
+  
   return {
     id: media.id.toString(),
-    title: media.title.english || media.title.romaji,
-    titleRomaji: media.title.romaji,
-    titleNative: media.title.native,
-    description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "",
+    title: media.title.english || media.title.romaji || "Unknown Title",
+    titleRomaji: media.title.romaji || media.title.english || "",
+    titleNative: media.title.native || "",
+    description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "No description available",
     genres: media.genres || [],
     tags: media.tags?.map(tag => ({
       name: tag.name,
@@ -258,18 +272,18 @@ const formatAnimeData = (anilistData) => {
       rank: tag.rank
     })) || [],
     // Use extraLarge image by default for HD quality
-    thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "",
-    thumbnailLarge: media.coverImage?.large || "",
-    thumbnailMedium: media.coverImage?.medium || "",
-    imageExtraLarge: media.coverImage?.extraLarge || "",
-    imageBanner: media.bannerImage || "",
+    thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "https://via.placeholder.com/500x750?text=No+Image",
+    thumbnailLarge: media.coverImage?.large || media.coverImage?.medium || "https://via.placeholder.com/500x750?text=No+Image",
+    thumbnailMedium: media.coverImage?.medium || media.coverImage?.large || "https://via.placeholder.com/225x335?text=No+Image",
+    imageExtraLarge: media.coverImage?.extraLarge || "https://via.placeholder.com/1000x1500?text=No+Image",
+    imageBanner: media.bannerImage || null,
     imageColor: media.coverImage?.color || "#808080",
     rating: media.averageScore / 10 || 0,
     meanScore: media.meanScore || 0,
     popularity: media.popularity || 0,
     episodeCount: media.episodes?.toString() || "Unknown",
     episodeLength: media.duration?.toString() || "Unknown",
-    status: media.status || "Unknown",
+    status: formatStatus(media.status),
     format: media.format || "Unknown",
     source: media.source || "Unknown",
     startDate: formatDate(media.startDate),
@@ -277,16 +291,16 @@ const formatAnimeData = (anilistData) => {
     season: media.season || "Unknown",
     seasonYear: media.seasonYear || null,
     studios: media.studios?.nodes?.map(studio => ({
-      name: studio.name,
-      isAnimationStudio: studio.isAnimationStudio
+      name: studio.name || "Unknown Studio",
+      isAnimationStudio: studio.isAnimationStudio || false
     })) || [],
     relations: media.relations?.edges?.map(relation => ({
-      type: relation.relationType,
-      id: relation.node.id,
-      title: relation.node.title.romaji,
-      mediaType: relation.node.type,
-      format: relation.node.format,
-      thumbnail: relation.node.coverImage?.medium || ""
+      type: relation.relationType || "Related",
+      id: relation.node.id.toString(),
+      title: relation.node.title.romaji || "Unknown Title",
+      mediaType: relation.node.type || "Unknown",
+      format: relation.node.format || "Unknown",
+      thumbnail: relation.node.coverImage?.medium || "https://via.placeholder.com/225x335?text=No+Image"
     })) || [],
     airingSchedule: media.airingSchedule?.nodes?.map(node => ({
       episode: node.episode,
@@ -303,8 +317,8 @@ const formatAnimeData = (anilistData) => {
     trailer: getTrailerUrl(media.trailer),
     trailerThumbnail: getTrailerThumbnail(media.trailer),
     externalLinks: media.externalLinks?.map(link => ({
-      site: link.site,
-      url: link.url
+      site: link.site || "External Link",
+      url: link.url || "#"
     })) || [],
     dateAdded: new Date().toISOString()
   };
@@ -312,6 +326,10 @@ const formatAnimeData = (anilistData) => {
 
 // Format search results with enhanced details and HD images
 const formatSearchResults = (anilistData) => {
+  if (!anilistData?.data?.Page?.media) {
+    return [];
+  }
+  
   return anilistData.data.Page.media.map(media => {
     // Format date
     const formatDate = (dateObj) => {
@@ -325,31 +343,44 @@ const formatSearchResults = (anilistData) => {
       return new Date(timestamp * 1000).toISOString();
     };
     
+    // Better status formatting
+    const formatStatus = (status) => {
+      if (!status) return "Unknown";
+      switch (status) {
+        case "FINISHED": return "Completed";
+        case "RELEASING": return "Airing";
+        case "NOT_YET_RELEASED": return "Upcoming";
+        case "CANCELLED": return "Cancelled";
+        case "HIATUS": return "On Hiatus";
+        default: return status;
+      }
+    };
+    
     return {
       id: media.id.toString(),
-      title: media.title.english || media.title.romaji,
-      titleRomaji: media.title.romaji,
-      titleNative: media.title.native,
-      description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "",
+      title: media.title.english || media.title.romaji || "Unknown Title",
+      titleRomaji: media.title.romaji || media.title.english || "",
+      titleNative: media.title.native || "",
+      description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "No description available",
       genres: media.genres || [],
       // Use extraLarge image by default for HD quality
-      thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "",
-      thumbnailLarge: media.coverImage?.large || "",
-      thumbnailMedium: media.coverImage?.medium || "",
-      imageExtraLarge: media.coverImage?.extraLarge || "",
-      imageBanner: media.bannerImage || "",
+      thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "https://via.placeholder.com/500x750?text=No+Image",
+      thumbnailLarge: media.coverImage?.large || media.coverImage?.medium || "https://via.placeholder.com/500x750?text=No+Image",
+      thumbnailMedium: media.coverImage?.medium || media.coverImage?.large || "https://via.placeholder.com/225x335?text=No+Image",
+      imageExtraLarge: media.coverImage?.extraLarge || "https://via.placeholder.com/1000x1500?text=No+Image",
+      imageBanner: media.bannerImage || null,
       imageColor: media.coverImage?.color || "#808080",
       rating: media.averageScore / 10 || 0,
       popularity: media.popularity || 0,
       episodeCount: media.episodes?.toString() || "Unknown",
       episodeLength: media.duration?.toString() || "Unknown",
-      status: media.status || "Unknown",
+      status: formatStatus(media.status),
       format: media.format || "Unknown",
       startDate: formatDate(media.startDate),
       endDate: formatDate(media.endDate),
       season: media.season || "Unknown",
       seasonYear: media.seasonYear || null,
-      studios: media.studios?.nodes?.map(studio => studio.name) || [],
+      studios: media.studios?.nodes?.map(studio => studio.name || "Unknown Studio") || [],
       nextAiring: media.nextAiringEpisode ? {
         episode: media.nextAiringEpisode.episode,
         airingAt: formatAiringTime(media.nextAiringEpisode.airingAt),
@@ -392,8 +423,16 @@ app.get('/api/anime', async (req, res) => {
           // Cache the result
           animeCache.set(animeInfo.id, animeDetail);
         } catch (error) {
-          // If AniList fails, use our stored custom data
-          animeDetail = animeInfo;
+          console.error(`Error fetching details for anime ID ${animeInfo.id}:`, error.message);
+          // If AniList fails, use our stored custom data or a placeholder
+          animeDetail = animeInfo.hasOwnProperty('title') ? animeInfo : {
+            id: animeInfo.id,
+            title: "Unknown Anime",
+            description: "Failed to load details",
+            thumbnail: "https://via.placeholder.com/500x750?text=Failed+to+Load",
+            status: "Unknown",
+            dateAdded: new Date().toISOString()
+          };
         }
       }
       
@@ -466,21 +505,35 @@ app.get('/api/trending', async (req, res) => {
       }
     });
     
+    // Better status formatting
+    const formatStatus = (status) => {
+      if (!status) return "Unknown";
+      switch (status) {
+        case "FINISHED": return "Completed";
+        case "RELEASING": return "Airing";
+        case "NOT_YET_RELEASED": return "Upcoming";
+        case "CANCELLED": return "Cancelled";
+        case "HIATUS": return "On Hiatus";
+        default: return status;
+      }
+    };
+    
     const results = response.data.data.Page.media.map(media => {
       return {
         id: media.id.toString(),
-        title: media.title.english || media.title.romaji,
-        titleRomaji: media.title.romaji,
+        title: media.title.english || media.title.romaji || "Unknown Title",
+        titleRomaji: media.title.romaji || media.title.english || "",
         // Use extraLarge image by default for HD quality
-        thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "",
-        thumbnailLarge: media.coverImage?.large || "",
-        thumbnailMedium: media.coverImage?.medium || "",
+        thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "https://via.placeholder.com/500x750?text=No+Image",
+        thumbnailLarge: media.coverImage?.large || "https://via.placeholder.com/500x750?text=No+Image",
+        thumbnailMedium: media.coverImage?.medium || "https://via.placeholder.com/225x335?text=No+Image",
+        imageBanner: media.bannerImage || null,
         imageColor: media.coverImage?.color || "#808080",
         rating: media.averageScore / 10 || 0,
         popularity: media.popularity || 0,
         episodeCount: media.episodes || "?",
-        status: media.status || "Unknown",
-        season: `${media.season} ${media.seasonYear}`
+        status: formatStatus(media.status),
+        season: `${media.season || "Unknown"} ${media.seasonYear || ""}`.trim()
       };
     });
     
@@ -516,6 +569,8 @@ app.get('/api/anime/:id', async (req, res) => {
       
       res.json(animeDetail);
     } catch (anilistError) {
+      console.error(`Error fetching from AniList for ID ${animeId}:`, anilistError.message);
+      
       // If AniList API fails, check our custom data
       const customAnimeList = readData(CUSTOM_ANIME_FILE);
       const foundAnime = customAnimeList.find(a => a.id === animeId);
@@ -577,6 +632,7 @@ app.post('/api/scheduled', async (req, res) => {
       // Format the data
       animeDetail = formatAnimeData(response.data);
     } catch (error) {
+      console.error("Error fetching anime details for scheduling:", error);
       return res.status(400).json({ error: 'Failed to fetch anime details from AniList' });
     }
     
@@ -635,65 +691,130 @@ app.delete('/api/scheduled/:id', (req, res) => {
   }
 });
 
+// Add anime to library
+app.post('/api/anime', async (req, res) => {
+  try {
+    const { anilistId } = req.body;
+    
+    if (!anilistId) {
+      return res.status(400).json({ error: 'AniList ID is required' });
+    }
+    
+    // Check if anime already exists in our list
+    const customAnimeList = readData(CUSTOM_ANIME_FILE);
+    if (customAnimeList.some(a => a.id === anilistId.toString())) {
+      // If already in library, just return it
+      const animeIndex = customAnimeList.findIndex(a => a.id === anilistId.toString());
+      
+      // Try to fetch from AniList for fresh data
+      try {
+        const response = await axios.post(ANILIST_API, {
+          query: getAnimeQuery,
+          variables: { id: parseInt(anilistId) }
+        });
+        
+        // Format the data
+        const animeDetail = formatAnimeData(response.data);
+        
+        // Cache the result
+        animeCache.set(anilistId.toString(), animeDetail);
+        
+        return res.json(animeDetail);
+      } catch (error) {
+        console.error("Error updating anime in library:", error);
+        // Return existing entry
+        if (animeCache.has(anilistId.toString())) {
+          return res.json(animeCache.get(anilistId.toString()));
+        } else {
+          return res.status(400).json({ error: 'Failed to update anime details' });
+        }
+      }
+    }
+    
+    // Fetch anime details from AniList
+    try {
+      const response = await axios.post(ANILIST_API, {
+        query: getAnimeQuery,
+        variables: { id: parseInt(anilistId) }
+      });
+      
+      // Format the data
+      const animeDetail = formatAnimeData(response.data);
+      
+      // Add to our custom list
+      customAnimeList.push({ id: anilistId.toString() });
+      
+      if (writeData(CUSTOM_ANIME_FILE, customAnimeList)) {
+        // Cache the result
+        animeCache.set(anilistId.toString(), animeDetail);
+        
+        return res.status(201).json(animeDetail);
+      } else {
+        return res.status(500).json({ error: 'Failed to add anime to list' });
+      }
+    } catch (error) {
+      console.error("Error adding anime:", error);
+      
+      return res.status(400).json({ error: 'Invalid AniList ID or API error' });
+    }
+  } catch (error) {
+    console.error("Error in add anime endpoint:", error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Remove anime from library
+app.delete('/api/anime/:id', (req, res) => {
+  const animeId = req.params.id;
+  let customAnimeList = readData(CUSTOM_ANIME_FILE);
+  let episodes = readData(EPISODES_FILE);
+  
+  // Remove from custom list
+  customAnimeList = customAnimeList.filter(a => a.id !== animeId);
+  
+  // Remove associated episodes
+  episodes = episodes.filter(e => e.animeId !== animeId);
+  
+  // Clear from cache
+  animeCache.delete(animeId);
+  
+  if (writeData(CUSTOM_ANIME_FILE, customAnimeList) && writeData(EPISODES_FILE, episodes)) {
+    res.json({ message: 'Anime and associated episodes removed successfully' });
+  } else {
+    res.status(500).json({ error: 'Failed to remove anime' });
+  }
+});
+
 // Enhanced search with pagination and filtering
 app.get('/api/search', async (req, res) => {
-  const { query, page = 1, perPage = 10, genre, season, year, status } = req.query;
+  const { query = "", page = 1, perPage = 10, genre, season, year, status } = req.query;
   
+  // Accept at least one parameter but make it more forgiving
   if (!query && !genre && !season && !year && !status) {
-    return res.status(400).json({ error: 'At least one search parameter is required' });
+    // Return trending anime instead of error for empty search
+    try {
+      const response = await axios.post(ANILIST_API, {
+        query: searchAnimeQuery,
+        variables: { 
+          page: parseInt(page),
+          perPage: parseInt(perPage),
+          sort: "POPULARITY_DESC"
+        }
+      });
+      
+      const searchResults = {
+        pageInfo: response.data.data.Page.pageInfo,
+        results: formatSearchResults(response.data)
+      };
+      
+      return res.json(searchResults);
+    } catch (error) {
+      console.error("Error fetching popular anime for empty search:", error);
+      return res.status(500).json({ error: 'Failed to fetch popular anime' });
+    }
   }
   
   try {
-    // Build the advanced search query
-    const advancedSearchQuery = `
-      query ($search: String, $page: Int, $perPage: Int, $genre: String, $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
-        Page(page: $page, perPage: $perPage) {
-          pageInfo {
-            total
-            currentPage
-            lastPage
-            hasNextPage
-            perPage
-          }
-          media(search: $search, genre: $genre, season: $season, seasonYear: $seasonYear, status: $status, type: ANIME, sort: POPULARITY_DESC) {
-            id
-            title {
-              english
-              romaji
-              native
-            }
-            description
-            genres
-            coverImage {
-              large
-              extraLarge
-              medium
-              color
-            }
-            bannerImage
-            averageScore
-            popularity
-            episodes
-            duration
-            status
-            format
-            startDate {
-              year
-              month
-              day
-            }
-            season
-            seasonYear
-            nextAiringEpisode {
-              episode
-              airingAt
-              timeUntilAiring
-            }
-          }
-        }
-      }
-    `;
-    
     // Convert season string to enum value
     let seasonEnum = null;
     if (season) {
@@ -706,8 +827,18 @@ app.get('/api/search', async (req, res) => {
       statusEnum = status.toUpperCase();
     }
     
+    console.log("Search query parameters:", { 
+      search: query || undefined,
+      page: parseInt(page),
+      perPage: parseInt(perPage),
+      genre: genre || undefined,
+      season: seasonEnum,
+      seasonYear: year ? parseInt(year) : undefined,
+      status: statusEnum
+    });
+    
     const response = await axios.post(ANILIST_API, {
-      query: advancedSearchQuery,
+      query: searchAnimeQuery,
       variables: { 
         search: query || undefined,
         page: parseInt(page),
@@ -721,54 +852,17 @@ app.get('/api/search', async (req, res) => {
     
     const searchResults = {
       pageInfo: response.data.data.Page.pageInfo,
-      results: response.data.data.Page.media.map(media => {
-        // Format date
-        const formatDate = (dateObj) => {
-          if (!dateObj || !dateObj.year) return null;
-          return `${dateObj.year}-${dateObj.month?.toString().padStart(2, '0') || '01'}-${dateObj.day?.toString().padStart(2, '0') || '01'}`;
-        };
-        
-        // Format airing time
-        const formatAiringTime = (timestamp) => {
-          if (!timestamp) return null;
-          return new Date(timestamp * 1000).toISOString();
-        };
-        
-        return {
-          id: media.id.toString(),
-          title: media.title.english || media.title.romaji,
-          titleRomaji: media.title.romaji,
-          titleNative: media.title.native,
-          description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "",
-          genres: media.genres || [],
-          // Use extraLarge image by default for HD quality 
-          thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "",
-          thumbnailLarge: media.coverImage?.large || "",
-          thumbnailMedium: media.coverImage?.medium || "",
-          imageColor: media.coverImage?.color || "#808080",
-          banner: media.bannerImage,
-          rating: media.averageScore / 10 || 0,
-          popularity: media.popularity || 0,
-          episodeCount: media.episodes?.toString() || "Unknown",
-          episodeLength: media.duration?.toString() || "Unknown",
-          status: media.status || "Unknown",
-          format: media.format || "Unknown",
-          startDate: formatDate(media.startDate),
-          season: media.season || "Unknown",
-          seasonYear: media.seasonYear || null,
-          nextAiring: media.nextAiringEpisode ? {
-            episode: media.nextAiringEpisode.episode,
-            airingAt: formatAiringTime(media.nextAiringEpisode.airingAt),
-            timeUntilAiring: media.nextAiringEpisode.timeUntilAiring
-          } : null
-        };
-      })
+      results: formatSearchResults(response.data)
     };
     
     res.json(searchResults);
   } catch (error) {
     console.error("Error searching anime:", error);
-    res.status(500).json({ error: 'Failed to search anime' });
+    res.status(500).json({ 
+      error: 'Failed to search anime',
+      pageInfo: { currentPage: 1, lastPage: 1, hasNextPage: false, perPage: parseInt(perPage) },
+      results: []
+    });
   }
 });
 
