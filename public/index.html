@@ -712,6 +712,10 @@
                         if (!document.querySelector('#genreFilter').children.length > 1) {
                             loadGenres();
                         }
+                        // Run search with empty query to show trending anime
+                        if (document.querySelector('#searchResults').children.length <= 1) {
+                            searchAnime(1);
+                        }
                     } else if (view === 'library') {
                         libraryView.classList.remove('hidden');
                         loadLibraryData();
@@ -1190,6 +1194,23 @@
             const yearFilter = document.getElementById('yearFilter');
             const statusFilter = document.getElementById('statusFilter');
             
+            // Add instant search capability - search after 500ms of typing
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    searchAnime(1);
+                }, 500);
+            });
+            
+            // Enter key triggers search immediately
+            searchInput.addEventListener('keyup', event => {
+                if (event.key === 'Enter') {
+                    clearTimeout(searchTimeout);
+                    searchAnime(1);
+                }
+            });
+            
             // Populate year filter with last 20 years
             const currentYear = new Date().getFullYear();
             for (let year = currentYear; year >= currentYear - 20; year--) {
@@ -1201,13 +1222,6 @@
             
             // Load genres for filter
             loadGenres();
-            
-            // Add event listeners for search and filters
-            searchInput.addEventListener('keyup', event => {
-                if (event.key === 'Enter') {
-                    searchAnime(1);
-                }
-            });
             
             // Filters change event
             [genreFilter, seasonFilter, yearFilter, statusFilter].forEach(filter => {
@@ -1227,6 +1241,15 @@
                 const totalPages = parseInt(document.getElementById('totalPages').textContent);
                 if (currentPage < totalPages) {
                     searchAnime(currentPage + 1);
+                }
+            });
+            
+            // Run a popular anime search initially when someone goes to search page
+            document.querySelector('[data-view="search"]').addEventListener('click', () => {
+                // Only search if the results are empty
+                const resultsContainer = document.getElementById('searchResults');
+                if (resultsContainer.childElementCount <= 1) {
+                    searchAnime(1);
                 }
             });
         }
@@ -1252,6 +1275,24 @@
                 })
                 .catch(error => {
                     console.error('Error loading genres for filter:', error);
+                    // Try again with a direct list if the API fails
+                    const commonGenres = [
+                        "Action", "Adventure", "Comedy", "Drama", "Fantasy", 
+                        "Horror", "Mecha", "Music", "Mystery", "Romance", 
+                        "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller"
+                    ];
+                    
+                    const genreFilter = document.getElementById('genreFilter');
+                    const firstOption = genreFilter.options[0];
+                    genreFilter.innerHTML = '';
+                    genreFilter.appendChild(firstOption);
+                    
+                    commonGenres.forEach(genre => {
+                        const option = document.createElement('option');
+                        option.value = genre;
+                        option.textContent = genre;
+                        genreFilter.appendChild(option);
+                    });
                 });
         }
         
@@ -1271,14 +1312,25 @@
             if (year) queryParams += `&year=${encodeURIComponent(year)}`;
             if (status) queryParams += `&status=${encodeURIComponent(status)}`;
             
+            // Show loading state
             toggleLoading(true);
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent"></div>
+                    <p class="mt-3 text-gray-400">Searching anime...</p>
+                </div>
+            `;
             
             fetch(`${API_URL}/search?${queryParams}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`Search request failed: ${res.status}`);
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    const resultsContainer = document.getElementById('searchResults');
                     const paginationContainer = document.getElementById('searchPagination');
-                    
                     resultsContainer.innerHTML = '';
                     
                     if (!data.results || data.results.length === 0) {
@@ -1286,36 +1338,47 @@
                             <div class="col-span-full text-center py-12">
                                 <i class="ph ph-magnifying-glass-minus text-5xl mb-3 text-gray-500"></i>
                                 <p class="text-gray-400">No results found</p>
+                                <p class="text-sm text-gray-500 mt-2">Try different search terms or filters</p>
                             </div>
                         `;
                         paginationContainer.classList.add('hidden');
                     } else {
+                        // Create a fragment to improve performance
+                        const fragment = document.createDocumentFragment();
+                        
                         data.results.forEach(anime => {
                             const card = createAnimeCard(anime);
-                            resultsContainer.appendChild(card);
+                            fragment.appendChild(card);
                         });
+                        
+                        resultsContainer.appendChild(fragment);
                         
                         // Update pagination
                         document.getElementById('currentPage').textContent = data.pageInfo.currentPage;
                         document.getElementById('totalPages').textContent = data.pageInfo.lastPage || 1;
                         paginationContainer.classList.remove('hidden');
                         
-                        // Disable/enable prev/next buttons
-                        document.getElementById('prevPage').disabled = data.pageInfo.currentPage <= 1;
-                        document.getElementById('nextPage').disabled = !data.pageInfo.hasNextPage;
+                        // Handle pagination buttons
+                        const prevPageBtn = document.getElementById('prevPage');
+                        const nextPageBtn = document.getElementById('nextPage');
                         
-                        // Update button styles
+                        prevPageBtn.disabled = data.pageInfo.currentPage <= 1;
+                        nextPageBtn.disabled = !data.pageInfo.hasNextPage;
+                        
                         if (data.pageInfo.currentPage <= 1) {
-                            document.getElementById('prevPage').classList.add('opacity-50', 'cursor-not-allowed');
+                            prevPageBtn.classList.add('opacity-50', 'cursor-not-allowed');
                         } else {
-                            document.getElementById('prevPage').classList.remove('opacity-50', 'cursor-not-allowed');
+                            prevPageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                         }
                         
                         if (!data.pageInfo.hasNextPage) {
-                            document.getElementById('nextPage').classList.add('opacity-50', 'cursor-not-allowed');
+                            nextPageBtn.classList.add('opacity-50', 'cursor-not-allowed');
                         } else {
-                            document.getElementById('nextPage').classList.remove('opacity-50', 'cursor-not-allowed');
+                            nextPageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                         }
+                        
+                        // Scroll to top of results
+                        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                     
                     toggleLoading(false);
@@ -1323,16 +1386,17 @@
                 .catch(error => {
                     console.error('Error searching anime:', error);
                     showToast('Failed to search anime. Please try again.', 'error');
-                    toggleLoading(false);
                     
-                    const resultsContainer = document.getElementById('searchResults');
                     resultsContainer.innerHTML = `
                         <div class="col-span-full text-center py-12">
                             <i class="ph ph-warning text-5xl text-red-500 mb-3"></i>
-                            <p class="text-gray-400">Error while searching</p>
+                            <p class="text-gray-400">Error occurred while searching</p>
                             <button class="mt-4 px-4 py-2 bg-accent text-white rounded-lg" onclick="searchAnime(1)">Try Again</button>
                         </div>
                     `;
+                    
+                    document.getElementById('searchPagination').classList.add('hidden');
+                    toggleLoading(false);
                 });
         }
         
@@ -1832,7 +1896,7 @@
             })
             .catch(error => {
                 console.error('Error scheduling anime:', error);
-                showToast('Failed to schedule anime', 'error');
+                showToast('Failed to schedule anime. Please try again.', 'error');
                 toggleLoading(false);
             });
         }
