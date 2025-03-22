@@ -30,13 +30,18 @@ const SCHEDULED_RELEASES_FILE = path.join(DATA_DIR, 'scheduled_releases.json');
 // Create data directory if it doesn't exist
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
+    console.log(`Created data directory: ${DATA_DIR}`);
 }
 
 // Initialize data files if they don't exist
 const initializeDataFile = (filePath, initialData) => {
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, JSON.stringify(initialData, null, 2));
-        console.log(`Initialized ${path.basename(filePath)} with empty data`);
+    try {
+        if (!fs.existsSync(filePath)) {
+            fs.writeFileSync(filePath, JSON.stringify(initialData, null, 2));
+            console.log(`Initialized ${path.basename(filePath)} with empty data`);
+        }
+    } catch (error) {
+        console.error(`Error initializing ${filePath}:`, error);
     }
 };
 
@@ -51,6 +56,7 @@ const readData = (filePath) => {
         return JSON.parse(data);
     } catch (error) {
         console.error(`Error reading ${filePath}:`, error);
+        // Return empty array as fallback
         return [];
     }
 };
@@ -187,6 +193,11 @@ query ($search: String) {
 
 // Format anime data from AniList
 const formatAnimeData = (anilistData) => {
+  if (!anilistData || !anilistData.data || !anilistData.data.Media) {
+    console.error("Invalid AniList data:", anilistData);
+    return null;
+  }
+
   const media = anilistData.data.Media;
   
   // Format date
@@ -204,7 +215,7 @@ const formatAnimeData = (anilistData) => {
     genres: media.genres || [],
     thumbnail: media.coverImage?.large || "",
     banner: media.bannerImage || "",
-    rating: media.averageScore / 10 || 0,
+    rating: (media.averageScore ? media.averageScore / 10 : 0) || 0,
     popularity: media.popularity || 0,
     episodeCount: media.episodes?.toString() || "Unknown",
     duration: media.duration?.toString() || "Unknown",
@@ -221,6 +232,11 @@ const formatAnimeData = (anilistData) => {
 
 // Format search results from AniList
 const formatSearchResults = (anilistData) => {
+  if (!anilistData || !anilistData.data || !anilistData.data.Page || !anilistData.data.Page.media) {
+    console.error("Invalid search data:", anilistData);
+    return [];
+  }
+
   return anilistData.data.Page.media.map(media => {
     // Format date
     const formatDate = (dateObj) => {
@@ -237,7 +253,7 @@ const formatSearchResults = (anilistData) => {
       genres: media.genres || [],
       thumbnail: media.coverImage?.large || "",
       banner: media.bannerImage || "",
-      rating: media.averageScore / 10 || 0,
+      rating: (media.averageScore ? media.averageScore / 10 : 0) || 0,
       popularity: media.popularity || 0,
       episodeCount: media.episodes?.toString() || "Unknown",
       duration: media.duration?.toString() || "Unknown",
@@ -277,13 +293,18 @@ const makeAnilistRequest = async (query, variables) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-            }
+            },
+            timeout: 10000 // 10 second timeout
         });
         
         return response.data;
     } catch (error) {
         if (error.response) {
             console.error('AniList API error:', error.response.data);
+        } else if (error.request) {
+            console.error('No response from AniList API:', error.message);
+        } else {
+            console.error('Error setting up AniList request:', error.message);
         }
         throw error;
     }
@@ -294,6 +315,12 @@ const makeAnilistRequest = async (query, variables) => {
 app.get('/api/anime', async (req, res) => {
   try {
     const customAnimeList = readData(CUSTOM_ANIME_FILE);
+    
+    // If list is empty, return empty array immediately
+    if (customAnimeList.length === 0) {
+      return res.json([]);
+    }
+    
     const animeDetails = [];
     
     // Batch anime requests to reduce load
@@ -308,20 +335,24 @@ app.get('/api/anime', async (req, res) => {
         
         // Check cache first
         if (animeCache.has(animeInfo.id)) {
-          animeDetail = Object.assign({}, animeCache.get(animeInfo.id));
+          animeDetail = { ...animeCache.get(animeInfo.id) };
         } else {
           try {
             const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parseInt(animeInfo.id) });
             animeDetail = formatAnimeData(anilistData);
             
-            // Cache the result for an hour
-            animeCache.set(animeInfo.id, animeDetail);
-            setTimeout(() => animeCache.delete(animeInfo.id), 3600000); // 1 hour cache
-            
+            if (animeDetail) {
+              // Cache the result for an hour
+              animeCache.set(animeInfo.id, animeDetail);
+              setTimeout(() => animeCache.delete(animeInfo.id), 3600000); // 1 hour cache
+            } else {
+              // Fallback to basic info if formatting failed
+              animeDetail = { ...animeInfo, title: animeInfo.title || `Anime #${animeInfo.id}` };
+            }
           } catch (error) {
             console.error(`Error fetching anime ${animeInfo.id} from AniList:`, error.message);
             // If AniList fails, use our stored custom data
-            animeDetail = Object.assign({}, animeInfo);
+            animeDetail = { ...animeInfo, title: animeInfo.title || `Anime #${animeInfo.id}` };
           }
         }
         
@@ -334,18 +365,27 @@ app.get('/api/anime', async (req, res) => {
           animeDetail.notes = animeInfo.notes;
         }
         
+        if (animeInfo.title && !animeDetail.title) {
+          animeDetail.title = animeInfo.title;
+        }
+        
         return animeDetail;
       });
       
       // Wait for current batch to complete
       const batchResults = await Promise.all(batchPromises);
-      animeDetails.push(...batchResults);
+      animeDetails.push(...batchResults.filter(Boolean)); // Filter out nulls
     }
     
     res.json(animeDetails);
   } catch (error) {
     console.error("Error fetching anime list:", error);
-    res.status(500).json({ error: 'Failed to fetch anime list', details: error.message });
+    // Return empty array with error flag instead of 500 error
+    res.json({ 
+      anime: [],
+      error: 'Failed to fetch anime list',
+      details: error.message
+    });
   }
 });
 
@@ -365,17 +405,22 @@ app.get('/api/anime/:id', async (req, res) => {
     
     // Check cache first
     if (animeCache.has(animeId)) {
-      animeDetail = Object.assign({}, animeCache.get(animeId));
+      animeDetail = { ...animeCache.get(animeId) };
     } else {
       try {
         const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parseInt(animeId) });
         animeDetail = formatAnimeData(anilistData);
         
-        // Cache the result
-        animeCache.set(animeId, animeDetail);
+        if (animeDetail) {
+          // Cache the result
+          animeCache.set(animeId, animeDetail);
+        } else {
+          // Fallback if formatting failed
+          animeDetail = { ...animeInfo };
+        }
       } catch (error) {
         console.error(`Error fetching anime ${animeId} from AniList:`, error.message);
-        animeDetail = Object.assign({}, animeInfo);
+        animeDetail = { ...animeInfo };
       }
     }
     
@@ -386,6 +431,10 @@ app.get('/api/anime/:id', async (req, res) => {
     
     if (animeInfo.notes) {
       animeDetail.notes = animeInfo.notes;
+    }
+    
+    if (animeInfo.title && !animeDetail.title) {
+      animeDetail.title = animeInfo.title;
     }
     
     res.json(animeDetail);
@@ -421,7 +470,12 @@ app.get('/api/episodes', (req, res) => {
     res.json(episodes);
   } catch (error) {
     console.error("Error fetching episodes:", error);
-    res.status(500).json({ error: 'Failed to fetch episodes', details: error.message });
+    // Return empty array with error flag instead of 500 error
+    res.json({ 
+      episodes: [],
+      error: 'Failed to fetch episodes',
+      details: error.message
+    });
   }
 });
 
@@ -438,7 +492,7 @@ app.get('/api/anime/:id/episodes', (req, res) => {
     res.json(animeEpisodes);
   } catch (error) {
     console.error("Error fetching episodes for anime:", error);
-    res.status(500).json({ error: 'Failed to fetch episodes', details: error.message });
+    res.json([]);
   }
 });
 
@@ -483,14 +537,14 @@ app.get('/api/schedule', (req, res) => {
     res.json(scheduledEpisodes);
   } catch (error) {
     console.error("Error fetching scheduled releases:", error);
-    res.status(500).json({ error: 'Failed to fetch scheduled releases', details: error.message });
+    res.json([]);
   }
 });
 
 // Add anime to custom list
 app.post('/api/anime', async (req, res) => {
   try {
-    const { anilistId, scheduleDate, notes } = req.body;
+    const { anilistId, scheduleDate, notes, title } = req.body;
     
     if (!anilistId) {
       return res.status(400).json({ error: 'AniList ID is required' });
@@ -502,15 +556,29 @@ app.post('/api/anime', async (req, res) => {
       return res.status(400).json({ error: 'Anime already exists in the list' });
     }
     
-    // Fetch anime details from AniList
-    const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parseInt(anilistId) });
+    let animeDetail;
     
-    if (!anilistData || !anilistData.data || !anilistData.data.Media) {
-      return res.status(404).json({ error: 'Anime not found on AniList' });
+    try {
+      // Fetch anime details from AniList
+      const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parseInt(anilistId) });
+      animeDetail = formatAnimeData(anilistData);
+      
+      if (!animeDetail) {
+        throw new Error('Failed to format anime data');
+      }
+    } catch (anilistError) {
+      console.error("AniList API error:", anilistError);
+      
+      // Create basic anime entry with provided title or a placeholder
+      animeDetail = {
+        id: anilistId.toString(),
+        title: title || `Anime #${anilistId}`,
+        dateAdded: new Date().toISOString(),
+        genres: [],
+        status: "Unknown",
+        episodeCount: "Unknown"
+      };
     }
-    
-    // Format the data
-    const animeDetail = formatAnimeData(anilistData);
     
     // Create custom anime entry
     const customAnimeEntry = {
@@ -519,6 +587,11 @@ app.post('/api/anime', async (req, res) => {
     };
     
     // Add optional fields
+    if (title) {
+      customAnimeEntry.title = title;
+      animeDetail.title = title;
+    }
+    
     if (scheduleDate) {
       customAnimeEntry.scheduleDate = scheduleDate;
       animeDetail.scheduleDate = scheduleDate;
@@ -570,7 +643,7 @@ app.post('/api/anime', async (req, res) => {
 app.put('/api/anime/:id', async (req, res) => {
   try {
     const animeId = req.params.id;
-    const { scheduleDate, notes } = req.body;
+    const { scheduleDate, notes, title } = req.body;
     
     const customAnimeList = readData(CUSTOM_ANIME_FILE);
     const animeIndex = customAnimeList.findIndex(a => a.id === animeId);
@@ -581,6 +654,10 @@ app.put('/api/anime/:id', async (req, res) => {
     
     // Update custom anime entry
     const updatedEntry = { ...customAnimeList[animeIndex] };
+    
+    if (title !== undefined) {
+      updatedEntry.title = title;
+    }
     
     if (scheduleDate !== undefined) {
       updatedEntry.scheduleDate = scheduleDate;
@@ -599,6 +676,10 @@ app.put('/api/anime/:id', async (req, res) => {
       if (animeCache.has(animeId)) {
         const cachedAnime = animeCache.get(animeId);
         const updatedCache = { ...cachedAnime };
+        
+        if (title !== undefined) {
+          updatedCache.title = title;
+        }
         
         if (scheduleDate !== undefined) {
           updatedCache.scheduleDate = scheduleDate;
@@ -687,14 +768,24 @@ app.post('/api/episodes', async (req, res) => {
     }
     
     const nextEpisodeNumber = req.body.number ? parseInt(req.body.number) : 
-        (existingEpisodes.length > 0 ? Math.max(...existingEpisodes.map(e => e.number)) + 1 : 1);
+        (existingEpisodes.length > 0 ? Math.max(...existingEpisodes.map(e => parseInt(e.number) || 0)) + 1 : 1);
     
     // Auto-generate episode title if not provided
     const episodeTitle = req.body.title || `Episode ${nextEpisodeNumber}`;
     
+    // Get anime title for reference
+    let animeTitle = 'Unknown Anime';
+    const animeInfo = customAnimeList.find(a => a.id === req.body.animeId);
+    if (animeInfo && animeInfo.title) {
+      animeTitle = animeInfo.title;
+    } else if (animeCache.has(req.body.animeId)) {
+      animeTitle = animeCache.get(req.body.animeId).title;
+    }
+    
     const newEpisode = {
       id: Date.now().toString(), // Use timestamp for unique ID
       animeId: req.body.animeId,
+      animeTitle: animeTitle, // Include anime title for easier reference
       title: episodeTitle,
       number: nextEpisodeNumber,
       iframeSrc: req.body.iframeSrc || "",
@@ -717,19 +808,6 @@ app.post('/api/episodes', async (req, res) => {
         today.setHours(0, 0, 0, 0);
         
         if (releaseDate >= today) {
-          // Get anime title
-          let animeTitle = 'Unknown Anime';
-          
-          if (animeCache.has(req.body.animeId)) {
-            animeTitle = animeCache.get(req.body.animeId).title;
-          } else {
-            // Try to find the anime in our custom list
-            const animeInfo = customAnimeList.find(a => a.id === req.body.animeId);
-            if (animeInfo && animeInfo.title) {
-              animeTitle = animeInfo.title;
-            }
-          }
-          
           const scheduledReleases = readData(SCHEDULED_RELEASES_FILE);
           
           scheduledReleases.push({
@@ -773,9 +851,8 @@ app.post('/api/episodes/bulk', async (req, res) => {
     const customAnimeList = readData(CUSTOM_ANIME_FILE);
     
     // Check if anime exists
-    const animeExists = customAnimeList.some(a => a.id === animeId);
-    
-    if (!animeExists) {
+    const animeInfo = customAnimeList.find(a => a.id === animeId);
+    if (!animeInfo) {
       return res.status(404).json({ error: 'Anime not found in our list' });
     }
     
@@ -790,21 +867,17 @@ app.post('/api/episodes/bulk', async (req, res) => {
     // Get anime title for scheduled releases
     let animeTitle = 'Unknown Anime';
     
-    if (animeCache.has(animeId)) {
+    if (animeInfo.title) {
+      animeTitle = animeInfo.title;
+    } else if (animeCache.has(animeId)) {
       animeTitle = animeCache.get(animeId).title;
-    } else {
-      // Try to find the anime in our custom list
-      const animeInfo = customAnimeList.find(a => a.id === animeId);
-      if (animeInfo && animeInfo.title) {
-        animeTitle = animeInfo.title;
-      }
     }
     
     // Prepare new episodes and validate
     const processedEpisodes = [];
     const currentTimestamp = Date.now();
-    const existingNumbers = new Set(episodes.filter(e => e.animeId === animeId).map(e => e.number));
-    const scheduledReleases = readData(SCHEDULED_RELEASES_FILE);
+    const existingNumbers = new Set(episodes.filter(e => e.animeId === animeId).map(e => parseInt(e.number) || 0));
+    let scheduledReleases = readData(SCHEDULED_RELEASES_FILE);
     const newScheduledReleases = [];
     
     for (let i = 0; i < newEpisodes.length; i++) {
@@ -829,6 +902,7 @@ app.post('/api/episodes/bulk', async (req, res) => {
       const newEpisode = {
         id: `${currentTimestamp + i}`,
         animeId: animeId,
+        animeTitle: animeTitle,
         title: episode.title || `Episode ${number}`,
         number: number,
         iframeSrc: episode.iframeSrc || "",
@@ -871,7 +945,7 @@ app.post('/api/episodes/bulk', async (req, res) => {
       if (a.animeId !== b.animeId) {
         return a.animeId.localeCompare(b.animeId);
       }
-      return a.number - b.number;
+      return (parseInt(a.number) || 0) - (parseInt(b.number) || 0);
     });
     
     if (await writeDataWithLock(EPISODES_FILE, episodes)) {
@@ -945,10 +1019,7 @@ app.put('/api/episodes/:id', async (req, res) => {
         const isFutureRelease = newReleaseDate && newReleaseDate >= today;
         
         // Get anime title
-        let animeTitle = 'Unknown Anime';
-        if (animeCache.has(updatedEpisode.animeId)) {
-          animeTitle = animeCache.get(updatedEpisode.animeId).title;
-        }
+        let animeTitle = updatedEpisode.animeTitle || 'Unknown Anime';
         
         if (isFutureRelease && releaseIndex === -1) {
           // Add new scheduled release
@@ -1193,18 +1264,39 @@ app.post('/api/import', async (req, res) => {
 // Health check endpoint for monitoring
 app.get('/health', (req, res) => {
   try {
-    // Check if we can read from data files
-    const customAnimeList = readData(CUSTOM_ANIME_FILE);
-    const episodes = readData(EPISODES_FILE);
+    // Check if data directory exists and create if needed
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      console.log(`Created data directory: ${DATA_DIR}`);
+    }
     
-    res.status(200).json({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      counts: {
-        anime: customAnimeList.length,
-        episodes: episodes.length
-      }
-    });
+    // Initialize data files if they don't exist
+    initializeDataFile(EPISODES_FILE, []);
+    initializeDataFile(CUSTOM_ANIME_FILE, []);
+    initializeDataFile(SCHEDULED_RELEASES_FILE, []);
+    
+    // Check if files are readable
+    try {
+      const customAnimeList = readData(CUSTOM_ANIME_FILE);
+      const episodes = readData(EPISODES_FILE);
+      
+      res.status(200).json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        counts: {
+          anime: customAnimeList.length,
+          episodes: episodes.length
+        }
+      });
+    } catch (readError) {
+      console.error("Error reading data files during health check:", readError);
+      res.status(503).json({ 
+        status: 'warning', 
+        message: 'Data files not accessible',
+        error: readError.message,
+        timestamp: new Date().toISOString() 
+      });
+    }
   } catch (error) {
     console.error("Health check failed:", error);
     res.status(500).json({ 
@@ -1238,8 +1330,7 @@ process.on('SIGTERM', () => {
 // Handle errors gracefully
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
-  // Consider enabling this in production to automatically recover from crashes
-  // process.exit(1);
+  // In production, you might want to restart the server automatically
 });
 
 process.on('unhandledRejection', (reason, promise) => {
