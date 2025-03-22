@@ -827,3 +827,26 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Clean up resources before shutdown
+process.on('SIGINT', () => {
+  console.log('Server shutting down...');
+  process.exit(0);
+});
+
+// Schedule automatic health check (run every 5 minutes)
+setInterval(() => {
+  axios.get(`http://${HOST}:${PORT}/health`)
+    .then(response => {
+      if (response.data.status === 'ok') {
+        console.log(`Health check passed at ${response.data.timestamp}`);
+      } else {
+        console.error('Health check failed');
+      }
+    })
+    .catch(error => {
+      console.error('Health check error:', error.message);
+    });
+}, 300000); // 5 minutes in milliseconds
