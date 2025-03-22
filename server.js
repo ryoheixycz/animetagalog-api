@@ -18,6 +18,7 @@ app.use(express.static('public'));
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const EPISODES_FILE = path.join(DATA_DIR, 'episodes.json');
 const CUSTOM_ANIME_FILE = path.join(DATA_DIR, 'custom_anime.json');
+const SCHEDULE_FILE = path.join(DATA_DIR, 'schedule.json'); // New file for schedules
 
 // Create data directory if it doesn't exist
 if (!fs.existsSync(DATA_DIR)) {
@@ -33,6 +34,7 @@ const initializeDataFile = (filePath, initialData) => {
 
 initializeDataFile(EPISODES_FILE, []);
 initializeDataFile(CUSTOM_ANIME_FILE, []);
+initializeDataFile(SCHEDULE_FILE, []); // Initialize schedule file
 
 // Helper functions to read and write data
 const readData = (filePath) => {
@@ -72,6 +74,7 @@ query ($id: Int) {
     genres
     coverImage {
       large
+      extraLarge
     }
     bannerImage
     averageScore
@@ -97,6 +100,11 @@ query ($id: Int) {
     }
     countryOfOrigin
     isAdult
+    nextAiringEpisode {
+      airingAt
+      timeUntilAiring
+      episode
+    }
   }
 }
 `;
@@ -115,6 +123,7 @@ query ($search: String) {
       genres
       coverImage {
         large
+        extraLarge
       }
       bannerImage
       averageScore
@@ -140,6 +149,11 @@ query ($search: String) {
       }
       countryOfOrigin
       isAdult
+      nextAiringEpisode {
+        airingAt
+        timeUntilAiring
+        episode
+      }
     }
   }
 }
@@ -162,7 +176,7 @@ const formatAnimeData = (anilistData) => {
     titleNative: media.title.native,
     description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "",
     genres: media.genres || [],
-    thumbnail: media.coverImage?.large || "",
+    thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "", // Use higher quality image
     banner: media.bannerImage || "",
     rating: media.averageScore / 10 || 0,
     popularity: media.popularity || 0,
@@ -175,7 +189,12 @@ const formatAnimeData = (anilistData) => {
     country: media.countryOfOrigin || "Unknown",
     isAdult: media.isAdult || false,
     studios: media.studios?.nodes?.map(studio => studio.name) || [],
-    dateAdded: new Date().toISOString()
+    dateAdded: new Date().toISOString(),
+    nextEpisode: media.nextAiringEpisode ? {
+      airingAt: media.nextAiringEpisode.airingAt * 1000, // Convert to milliseconds
+      timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
+      episode: media.nextAiringEpisode.episode
+    } : null
   };
 };
 
@@ -195,7 +214,7 @@ const formatSearchResults = (anilistData) => {
       titleNative: media.title.native,
       description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "",
       genres: media.genres || [],
-      thumbnail: media.coverImage?.large || "",
+      thumbnail: media.coverImage?.extraLarge || media.coverImage?.large || "", // Use higher quality image
       banner: media.bannerImage || "",
       rating: media.averageScore / 10 || 0,
       popularity: media.popularity || 0,
@@ -207,7 +226,12 @@ const formatSearchResults = (anilistData) => {
       season: media.season || "Unknown",
       country: media.countryOfOrigin || "Unknown",
       isAdult: media.isAdult || false,
-      studios: media.studios?.nodes?.map(studio => studio.name) || []
+      studios: media.studios?.nodes?.map(studio => studio.name) || [],
+      nextEpisode: media.nextAiringEpisode ? {
+        airingAt: media.nextAiringEpisode.airingAt * 1000, // Convert to milliseconds
+        timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
+        episode: media.nextAiringEpisode.episode
+      } : null
     };
   });
 };
@@ -358,6 +382,20 @@ app.post('/api/anime', async (req, res) => {
       // Cache the result
       animeCache.set(anilistId.toString(), animeDetail);
       
+      // If anime has a scheduled next episode, add it to the schedule
+      if (animeDetail.nextEpisode) {
+        const schedules = readData(SCHEDULE_FILE);
+        schedules.push({
+          id: Date.now().toString(),
+          animeId: anilistId.toString(),
+          animeTitle: animeDetail.title,
+          episodeNumber: animeDetail.nextEpisode.episode,
+          airingAt: animeDetail.nextEpisode.airingAt,
+          thumbnail: animeDetail.thumbnail
+        });
+        writeData(SCHEDULE_FILE, schedules);
+      }
+      
       res.status(201).json(animeDetail);
     } else {
       res.status(500).json({ error: 'Failed to add anime to list' });
@@ -436,11 +474,143 @@ app.put('/api/episodes/:id', (req, res) => {
   }
 });
 
+// Get schedule
+app.get('/api/schedule', (req, res) => {
+  const schedules = readData(SCHEDULE_FILE);
+  // Sort by airing date - upcoming first
+  schedules.sort((a, b) => a.airingAt - b.airingAt);
+  res.json(schedules);
+});
+
+// Add custom schedule entry
+app.post('/api/schedule', async (req, res) => {
+  const { animeId, episodeNumber, airingDate } = req.body;
+  
+  if (!animeId || !episodeNumber || !airingDate) {
+    return res.status(400).json({ error: 'animeId, episodeNumber and airingDate are required' });
+  }
+  
+  try {
+    // Fetch anime details to get the title
+    const animeDetail = await app.get(`/api/anime/${animeId}`);
+    
+    const newSchedule = {
+      id: Date.now().toString(),
+      animeId,
+      animeTitle: animeDetail.title,
+      episodeNumber: parseInt(episodeNumber),
+      airingAt: new Date(airingDate).getTime(),
+      thumbnail: animeDetail.thumbnail
+    };
+    
+    const schedules = readData(SCHEDULE_FILE);
+    schedules.push(newSchedule);
+    
+    if (writeData(SCHEDULE_FILE, schedules)) {
+      res.status(201).json(newSchedule);
+    } else {
+      res.status(500).json({ error: 'Failed to add schedule entry' });
+    }
+  } catch (error) {
+    console.error("Error adding schedule:", error);
+    res.status(500).json({ error: 'Failed to add schedule entry' });
+  }
+});
+
+// Update schedule entry
+app.put('/api/schedule/:id', (req, res) => {
+  const scheduleId = req.params.id;
+  const schedules = readData(SCHEDULE_FILE);
+  const scheduleIndex = schedules.findIndex(s => s.id === scheduleId);
+  
+  if (scheduleIndex === -1) {
+    return res.status(404).json({ error: 'Schedule entry not found' });
+  }
+  
+  schedules[scheduleIndex] = {
+    ...schedules[scheduleIndex],
+    ...req.body,
+    id: scheduleId
+  };
+  
+  if (writeData(SCHEDULE_FILE, schedules)) {
+    res.json(schedules[scheduleIndex]);
+  } else {
+    res.status(500).json({ error: 'Failed to update schedule entry' });
+  }
+});
+
+// Delete schedule entry
+app.delete('/api/schedule/:id', (req, res) => {
+  const scheduleId = req.params.id;
+  let schedules = readData(SCHEDULE_FILE);
+  
+  const scheduleIndex = schedules.findIndex(s => s.id === scheduleId);
+  
+  if (scheduleIndex === -1) {
+    return res.status(404).json({ error: 'Schedule entry not found' });
+  }
+  
+  schedules.splice(scheduleIndex, 1);
+  
+  if (writeData(SCHEDULE_FILE, schedules)) {
+    res.json({ message: 'Schedule entry deleted successfully' });
+  } else {
+    res.status(500).json({ error: 'Failed to delete schedule entry' });
+  }
+});
+
+// Refresh schedule data from AniList
+app.post('/api/schedule/refresh', async (req, res) => {
+  try {
+    const customAnimeList = readData(CUSTOM_ANIME_FILE);
+    const schedules = [];
+    
+    for (const anime of customAnimeList) {
+      const response = await axios.post(ANILIST_API, {
+        query: getAnimeQuery,
+        variables: { id: parseInt(anime.id) }
+      });
+      
+      const animeDetail = formatAnimeData(response.data);
+      
+      // Cache the fresh data
+      animeCache.set(anime.id, animeDetail);
+      
+      // Add to schedule if there's an upcoming episode
+      if (animeDetail.nextEpisode) {
+        schedules.push({
+          id: Date.now().toString() + anime.id,
+          animeId: anime.id,
+          animeTitle: animeDetail.title,
+          episodeNumber: animeDetail.nextEpisode.episode,
+          airingAt: animeDetail.nextEpisode.airingAt,
+          thumbnail: animeDetail.thumbnail
+        });
+      }
+    }
+    
+    // Write the new schedule
+    if (writeData(SCHEDULE_FILE, schedules)) {
+      res.json({ 
+        message: 'Schedule refreshed successfully', 
+        count: schedules.length 
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to write schedule data' });
+    }
+  } catch (error) {
+    console.error("Error refreshing schedule:", error);
+    res.status(500).json({ error: 'Failed to refresh schedule' });
+  }
+});
+
 // Remove anime from list
 app.delete('/api/anime/:id', (req, res) => {
   const animeId = req.params.id;
   let customAnimeList = readData(CUSTOM_ANIME_FILE);
   let episodes = readData(EPISODES_FILE);
+  let schedules = readData(SCHEDULE_FILE);
   
   // Remove from custom list
   customAnimeList = customAnimeList.filter(a => a.id !== animeId);
@@ -448,11 +618,16 @@ app.delete('/api/anime/:id', (req, res) => {
   // Remove associated episodes
   episodes = episodes.filter(e => e.animeId !== animeId);
   
+  // Remove from schedule
+  schedules = schedules.filter(s => s.animeId !== animeId);
+  
   // Clear from cache
   animeCache.delete(animeId);
   
-  if (writeData(CUSTOM_ANIME_FILE, customAnimeList) && writeData(EPISODES_FILE, episodes)) {
-    res.json({ message: 'Anime and associated episodes removed successfully' });
+  if (writeData(CUSTOM_ANIME_FILE, customAnimeList) && 
+      writeData(EPISODES_FILE, episodes) &&
+      writeData(SCHEDULE_FILE, schedules)) {
+    res.json({ message: 'Anime and associated data removed successfully' });
   } else {
     res.status(500).json({ error: 'Failed to remove anime' });
   }
@@ -506,10 +681,12 @@ app.get('/api/search', async (req, res) => {
 app.get('/api/export', (req, res) => {
   const customAnimeList = readData(CUSTOM_ANIME_FILE);
   const episodes = readData(EPISODES_FILE);
+  const schedules = readData(SCHEDULE_FILE);
   
   const exportData = {
     anime: customAnimeList,
     episodes,
+    schedules,
     exportDate: new Date().toISOString(),
     exportVersion: "1.0"
   };
