@@ -110,6 +110,7 @@ query ($id: Int) {
     genres
     coverImage {
       large
+      medium
     }
     bannerImage
     averageScore
@@ -117,6 +118,7 @@ query ($id: Int) {
     episodes
     duration
     status
+    format
     startDate {
       year
       month
@@ -128,7 +130,7 @@ query ($id: Int) {
       day
     }
     season
-    studios {
+    studios(isMain: true) {
       nodes {
         name
       }
@@ -141,8 +143,8 @@ query ($id: Int) {
 
 const searchAnimeQuery = `
 query ($search: String) {
-  Page(page: 1, perPage: 10) {
-    media(search: $search, type: ANIME) {
+  Page(page: 1, perPage: 15) {
+    media(search: $search, type: ANIME, sort: [POPULARITY_DESC]) {
       id
       title {
         english
@@ -153,6 +155,7 @@ query ($search: String) {
       genres
       coverImage {
         large
+        medium
       }
       bannerImage
       averageScore
@@ -160,6 +163,7 @@ query ($search: String) {
       episodes
       duration
       status
+      format
       startDate {
         year
         month
@@ -171,7 +175,7 @@ query ($search: String) {
         day
       }
       season
-      studios {
+      studios(isMain: true) {
         nodes {
           name
         }
@@ -205,13 +209,14 @@ const formatAnimeData = (anilistData) => {
     titleNative: media.title.native,
     description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "",
     genres: media.genres || [],
-    thumbnail: media.coverImage?.large || "",
+    thumbnail: media.coverImage?.large || media.coverImage?.medium || "",
     banner: media.bannerImage || "",
     rating: (media.averageScore ? media.averageScore / 10 : 0) || 0,
     popularity: media.popularity || 0,
     episodeCount: media.episodes?.toString() || "Unknown",
     duration: media.duration?.toString() || "Unknown",
     status: media.status || "Unknown",
+    format: media.format || "TV",
     startDate: formatDate(media.startDate),
     endDate: formatDate(media.endDate),
     season: media.season || "Unknown",
@@ -243,13 +248,14 @@ const formatSearchResults = (anilistData) => {
       titleNative: media.title.native,
       description: media.description?.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, "") || "",
       genres: media.genres || [],
-      thumbnail: media.coverImage?.large || "",
+      thumbnail: media.coverImage?.large || media.coverImage?.medium || "",
       banner: media.bannerImage || "",
       rating: (media.averageScore ? media.averageScore / 10 : 0) || 0,
       popularity: media.popularity || 0,
       episodeCount: media.episodes?.toString() || "Unknown",
       duration: media.duration?.toString() || "Unknown",
       status: media.status || "Unknown",
+      format: media.format || "TV",
       startDate: formatDate(media.startDate),
       endDate: formatDate(media.endDate),
       season: media.season || "Unknown",
@@ -265,6 +271,10 @@ const makeAnilistRequest = async (query, variables) => {
   try {
     console.log(`AniList API request: ${JSON.stringify(variables)}`);
     
+    // Create an abort controller for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    
     const response = await axios.post(ANILIST_API, {
       query,
       variables
@@ -273,20 +283,45 @@ const makeAnilistRequest = async (query, variables) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      timeout: 10000 // 10 second timeout
+      signal: controller.signal,
+      timeout: 15000 // 15 second timeout (axios)
     });
     
+    // Clear the timeout
+    clearTimeout(timeoutId);
+    
     console.log(`AniList API response status: ${response.status}`);
+    
+    // Check for GraphQL errors
+    if (response.data.errors) {
+      console.error('AniList GraphQL errors:', response.data.errors);
+      throw new Error(response.data.errors[0]?.message || 'GraphQL error');
+    }
+    
     return response.data;
   } catch (error) {
-    if (error.response) {
+    // Handle different types of errors
+    if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+      console.error('AniList API timeout:', error.message);
+      throw new Error('AniList API timeout. Please try again later.');
+    } else if (error.response) {
+      // The request was made and the server responded with a status code that falls out of the range of 2xx
       console.error('AniList API error response:', error.response.status, error.response.data);
+      
+      if (error.response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a few minutes.');
+      } else {
+        throw new Error(`AniList API error: ${error.response.status}`);
+      }
     } else if (error.request) {
+      // The request was made but no response was received
       console.error('No response from AniList API:', error.message);
+      throw new Error('No response from AniList API. Please check your network connection.');
     } else {
+      // Something happened in setting up the request that triggered an Error
       console.error('Error setting up AniList request:', error.message);
+      throw new Error('Error setting up AniList request: ' + error.message);
     }
-    throw error;
   }
 };
 
@@ -303,13 +338,21 @@ app.get('/api/anime', async (req, res) => {
     }
     
     const animeDetails = [];
+    const errors = [];
     
     for (const animeInfo of customAnimeList) {
       try {
         console.log(`Fetching anime details for ID: ${animeInfo.id}`);
         
+        // Try to parse id as integer
+        const animeId = parseInt(animeInfo.id, 10);
+        
+        if (isNaN(animeId)) {
+          throw new Error(`Invalid anime ID: ${animeInfo.id}`);
+        }
+        
         // Fetch from AniList
-        const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parseInt(animeInfo.id) });
+        const anilistData = await makeAnilistRequest(getAnimeQuery, { id: animeId });
         const animeDetail = formatAnimeData(anilistData);
         
         if (animeDetail) {
@@ -325,8 +368,11 @@ app.get('/api/anime', async (req, res) => {
           animeDetails.push({
             id: animeInfo.id,
             title: animeInfo.title || `Anime #${animeInfo.id}`,
-            dateAdded: animeInfo.dateAdded || new Date().toISOString()
+            dateAdded: animeInfo.dateAdded || new Date().toISOString(),
+            scheduleDate: animeInfo.scheduleDate
           });
+          
+          errors.push(`Error formatting anime ID: ${animeInfo.id}`);
         }
       } catch (error) {
         console.error(`Error fetching anime ${animeInfo.id}:`, error.message);
@@ -334,12 +380,19 @@ app.get('/api/anime', async (req, res) => {
         animeDetails.push({
           id: animeInfo.id,
           title: animeInfo.title || `Anime #${animeInfo.id}`,
-          dateAdded: animeInfo.dateAdded || new Date().toISOString()
+          dateAdded: animeInfo.dateAdded || new Date().toISOString(),
+          scheduleDate: animeInfo.scheduleDate
         });
+        
+        errors.push(`Error fetching anime ${animeInfo.id}: ${error.message}`);
       }
     }
     
-    res.json(animeDetails);
+    // Include errors in response
+    res.json({
+      anime: animeDetails,
+      errors: errors.length > 0 ? errors : undefined
+    });
   } catch (error) {
     console.error("Error fetching anime list:", error);
     res.status(500).json({ error: 'Failed to fetch anime list', details: error.message });
@@ -360,8 +413,15 @@ app.get('/api/anime/:id', async (req, res) => {
     }
     
     try {
+      // Try to parse id as integer
+      const parsedId = parseInt(animeId, 10);
+      
+      if (isNaN(parsedId)) {
+        throw new Error(`Invalid anime ID: ${animeId}`);
+      }
+      
       // Fetch from AniList
-      const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parseInt(animeId) });
+      const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parsedId });
       const animeDetail = formatAnimeData(anilistData);
       
       if (animeDetail) {
@@ -387,7 +447,8 @@ app.get('/api/anime/:id', async (req, res) => {
         id: animeInfo.id,
         title: animeInfo.title || `Anime #${animeInfo.id}`,
         dateAdded: animeInfo.dateAdded || new Date().toISOString(),
-        scheduleDate: animeInfo.scheduleDate
+        scheduleDate: animeInfo.scheduleDate,
+        fetchError: error.message
       });
     }
   } catch (error) {
@@ -437,7 +498,12 @@ app.get('/api/anime/:id/episodes', (req, res) => {
     const animeEpisodes = episodes.filter(e => e.animeId === animeId);
     
     // Sort by episode number by default
-    animeEpisodes.sort((a, b) => a.number - b.number);
+    animeEpisodes.sort((a, b) => {
+      // Convert to numbers for proper sorting
+      const numA = parseInt(a.number, 10) || 0;
+      const numB = parseInt(b.number, 10) || 0;
+      return numA - numB;
+    });
     
     res.json(animeEpisodes);
   } catch (error) {
@@ -513,8 +579,15 @@ app.post('/api/anime', async (req, res) => {
     let animeDetail = null;
     
     try {
+      // Try to parse id as integer
+      const parsedId = parseInt(anilistId, 10);
+      
+      if (isNaN(parsedId)) {
+        throw new Error(`Invalid anime ID: ${anilistId}`);
+      }
+      
       // Fetch anime details from AniList
-      const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parseInt(anilistId) });
+      const anilistData = await makeAnilistRequest(getAnimeQuery, { id: parsedId });
       animeDetail = formatAnimeData(anilistData);
       
       if (!animeDetail) {
@@ -527,7 +600,8 @@ app.post('/api/anime', async (req, res) => {
       animeDetail = {
         id: anilistId.toString(),
         title: title || `Anime #${anilistId}`,
-        dateAdded: new Date().toISOString()
+        dateAdded: new Date().toISOString(),
+        fetchError: apiError.message
       };
     }
     
@@ -582,14 +656,16 @@ app.post('/api/episodes', async (req, res) => {
     
     // If number is provided, check if it already exists
     if (req.body.number) {
-      const numberExists = existingEpisodes.some(e => parseInt(e.number) === parseInt(req.body.number));
+      const episodeNumber = parseInt(req.body.number, 10);
+      const numberExists = existingEpisodes.some(e => parseInt(e.number, 10) === episodeNumber);
       if (numberExists) {
         return res.status(400).json({ error: `Episode number ${req.body.number} already exists for this anime` });
       }
     }
     
-    const nextEpisodeNumber = req.body.number ? parseInt(req.body.number) : 
-        (existingEpisodes.length > 0 ? Math.max(...existingEpisodes.map(e => parseInt(e.number) || 0)) + 1 : 1);
+    const nextEpisodeNumber = req.body.number ? parseInt(req.body.number, 10) : 
+        (existingEpisodes.length > 0 ? 
+         Math.max(...existingEpisodes.map(e => parseInt(e.number, 10) || 0)) + 1 : 1);
     
     // Auto-generate episode title if not provided
     const episodeTitle = req.body.title || `Episode ${nextEpisodeNumber}`;
@@ -599,7 +675,7 @@ app.post('/api/episodes', async (req, res) => {
       animeId: req.body.animeId,
       animeTitle: animeInfo.title || 'Unknown Anime',
       title: episodeTitle,
-      number: nextEpisodeNumber,
+      number: nextEpisodeNumber.toString(),
       iframeSrc: req.body.iframeSrc || "",
       server2Url: req.body.server2Url,
       dateAdded: new Date().toISOString()
@@ -741,24 +817,34 @@ app.get('/api/search', async (req, res) => {
     const { query } = req.query;
     console.log(`GET /api/search?query=${query}`);
     
-    if (!query) {
-      return res.status(400).json({ error: 'Query parameter required' });
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({ error: 'Query parameter required (minimum 2 characters)' });
     }
     
     // Direct call to AniList API
-    const anilistData = await makeAnilistRequest(searchAnimeQuery, { search: query });
-    
-    // Format the data
-    const searchResults = formatSearchResults(anilistData);
-    
-    // Filter out adult content (optional, can be removed if adult content is allowed)
-    const filteredResults = searchResults.filter(anime => !anime.isAdult);
-    
-    res.json(filteredResults);
+    try {
+      const anilistData = await makeAnilistRequest(searchAnimeQuery, { search: query.trim() });
+      
+      // Format the data
+      const searchResults = formatSearchResults(anilistData);
+      
+      // Filter out adult content (optional, can be removed if adult content is allowed)
+      const filteredResults = searchResults.filter(anime => !anime.isAdult);
+      
+      res.json(filteredResults);
+    } catch (error) {
+      console.error("Error searching anime:", error);
+      // Return error information for debugging
+      res.status(500).json({ 
+        error: 'Failed to search anime', 
+        message: error.message,
+        results: [] 
+      });
+    }
   } catch (error) {
-    console.error("Error searching anime:", error);
-    // Return empty array instead of error for better UX
-    res.json([]);
+    console.error("Search endpoint error:", error);
+    // Return empty array instead of error for better UX in production
+    res.status(500).json({ error: 'Search failed', message: error.message, results: [] });
   }
 });
 
@@ -776,21 +862,30 @@ app.get('/health', (req, res) => {
     initializeDataFile(CUSTOM_ANIME_FILE, []);
     initializeDataFile(SCHEDULED_RELEASES_FILE, []);
     
-    // Try AniList API test call
+    // Try AniList API test call with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     axios.post(ANILIST_API, {
-      query: `{ Viewer { id } }`,
+      query: `{ Media(id: 1) { id } }`,
     }, {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
+      signal: controller.signal,
       timeout: 5000 // 5 second timeout
     })
-    .then(() => {
+    .then((response) => {
+      clearTimeout(timeoutId);
+      
+      const hasError = response.data.errors && response.data.errors.length > 0;
+      
       res.status(200).json({ 
-        status: 'ok', 
+        status: hasError ? 'warning' : 'ok', 
         timestamp: new Date().toISOString(),
-        anilistApi: 'connected',
+        anilistApi: hasError ? 'error' : 'connected',
+        apiError: hasError ? response.data.errors[0].message : undefined,
         directories: {
           data: fs.existsSync(DATA_DIR),
           episodes: fs.existsSync(EPISODES_FILE),
@@ -799,7 +894,9 @@ app.get('/health', (req, res) => {
       });
     })
     .catch(apiError => {
+      clearTimeout(timeoutId);
       console.warn("AniList API test failed:", apiError.message);
+      
       res.status(200).json({ 
         status: 'warning', 
         timestamp: new Date().toISOString(),
@@ -819,6 +916,117 @@ app.get('/health', (req, res) => {
       error: error.message,
       timestamp: new Date().toISOString() 
     });
+  }
+});
+
+// Bulk upload episodes
+app.post('/api/episodes/bulk', async (req, res) => {
+  try {
+    console.log('POST /api/episodes/bulk', { 
+      animeId: req.body.animeId, 
+      episodeCount: req.body.episodes ? req.body.episodes.length : 0 
+    });
+    
+    const { animeId, episodes, replaceExisting } = req.body;
+    
+    if (!animeId) {
+      return res.status(400).json({ error: 'Anime ID is required' });
+    }
+    
+    if (!episodes || !Array.isArray(episodes) || episodes.length === 0) {
+      return res.status(400).json({ error: 'Episodes array is required' });
+    }
+    
+    // Check if anime exists
+    const customAnimeList = readData(CUSTOM_ANIME_FILE);
+    const animeInfo = customAnimeList.find(a => a.id === animeId);
+    
+    if (!animeInfo) {
+      return res.status(404).json({ error: 'Anime not found in our list' });
+    }
+    
+    // Get existing episodes
+    let allEpisodes = readData(EPISODES_FILE);
+    
+    // Remove existing episodes if specified
+    if (replaceExisting) {
+      allEpisodes = allEpisodes.filter(e => e.animeId !== animeId);
+    }
+    
+    // Process new episodes
+    const newEpisodes = [];
+    const errors = [];
+    
+    for (const episodeData of episodes) {
+      try {
+        // Validate required fields
+        if (!episodeData.number) {
+          throw new Error('Episode number is required');
+        }
+        
+        if (!episodeData.server2Url) {
+          throw new Error(`Server 2 URL is required for episode ${episodeData.number}`);
+        }
+        
+        const episodeNumber = parseInt(episodeData.number, 10);
+        
+        // Check if this episode already exists (only if not replacing)
+        if (!replaceExisting) {
+          const duplicateEpisode = allEpisodes.find(e => 
+            e.animeId === animeId && 
+            parseInt(e.number, 10) === episodeNumber
+          );
+          
+          if (duplicateEpisode) {
+            throw new Error(`Episode ${episodeNumber} already exists`);
+          }
+        }
+        
+        // Create new episode object
+        const newEpisode = {
+          id: Date.now() + Math.floor(Math.random() * 1000).toString(), // Unique ID
+          animeId,
+          animeTitle: animeInfo.title,
+          number: episodeNumber.toString(),
+          title: episodeData.title || `Episode ${episodeNumber}`,
+          iframeSrc: episodeData.iframeSrc || episodeData.server1Url || "",
+          server2Url: episodeData.server2Url,
+          dateAdded: new Date().toISOString()
+        };
+        
+        // Add release date if provided
+        if (episodeData.releaseDate) {
+          newEpisode.releaseDate = episodeData.releaseDate;
+        }
+        
+        newEpisodes.push(newEpisode);
+      } catch (episodeError) {
+        errors.push(`Episode ${episodeData.number}: ${episodeError.message}`);
+      }
+    }
+    
+    if (newEpisodes.length === 0) {
+      return res.status(400).json({ 
+        error: 'No valid episodes to add', 
+        details: errors 
+      });
+    }
+    
+    // Add new episodes to the collection
+    allEpisodes = [...allEpisodes, ...newEpisodes];
+    
+    if (writeData(EPISODES_FILE, allEpisodes)) {
+      res.status(201).json({ 
+        added: newEpisodes.length,
+        errors: errors.length > 0 ? errors : undefined,
+        episodes: newEpisodes
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to write episodes to file' });
+    }
+  } catch (error) {
+    console.error("Error in bulk upload:", error);
+    res.status(500).json({ error: 'Failed to process bulk upload', details: error.message });
   }
 });
 
@@ -851,3 +1059,5 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+module.exports = app; // Export for testing
