@@ -49,10 +49,34 @@ const readData = (filePath) => {
 
 const writeData = (filePath, data) => {
     try {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+        // Create a backup of the file before writing
+        if (fs.existsSync(filePath)) {
+            const backupPath = `${filePath}.backup`;
+            fs.copyFileSync(filePath, backupPath);
+        }
+        
+        // Write the data to a temporary file first
+        const tempPath = `${filePath}.temp`;
+        fs.writeFileSync(tempPath, JSON.stringify(data, null, 2));
+        
+        // Rename the temporary file to the actual file (atomic operation)
+        fs.renameSync(tempPath, filePath);
+        
         return true;
     } catch (error) {
         console.error(`Error writing to ${filePath}:`, error);
+        
+        // Try to restore from backup if write failed
+        try {
+            const backupPath = `${filePath}.backup`;
+            if (fs.existsSync(backupPath)) {
+                fs.copyFileSync(backupPath, filePath);
+                console.log(`Restored ${filePath} from backup`);
+            }
+        } catch (backupError) {
+            console.error(`Failed to restore backup for ${filePath}:`, backupError);
+        }
+        
         return false;
     }
 };
@@ -221,11 +245,42 @@ const formatSearchResults = (anilistData) => {
 // Cache for anime data to reduce API calls
 const animeCache = new Map();
 
+// Load data files on startup
+let customAnimeList = [];
+let episodes = [];
+let scheduledAnime = [];
+
+try {
+    console.log("Loading custom anime list from disk...");
+    customAnimeList = readData(CUSTOM_ANIME_FILE);
+    console.log(`Loaded ${customAnimeList.length} custom anime entries`);
+    
+    console.log("Loading episodes from disk...");
+    episodes = readData(EPISODES_FILE);
+    console.log(`Loaded ${episodes.length} episodes`);
+    
+    console.log("Loading scheduled anime from disk...");
+    scheduledAnime = readData(SCHEDULED_ANIME_FILE);
+    console.log(`Loaded ${scheduledAnime.length} scheduled anime entries`);
+} catch (error) {
+    console.error("Error loading data files:", error);
+}
+
+// Data sync interval (save to disk every 5 minutes)
+const syncInterval = 5 * 60 * 1000; // 5 minutes
+setInterval(() => {
+    console.log("Syncing data to disk...");
+    writeData(CUSTOM_ANIME_FILE, customAnimeList);
+    writeData(EPISODES_FILE, episodes);
+    writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
+    console.log("Data sync complete");
+}, syncInterval);
+
 // API Routes
 // Get all anime (from custom list)
 app.get('/api/anime', async (req, res) => {
   try {
-    const customAnimeList = readData(CUSTOM_ANIME_FILE);
+    // Use the in-memory list instead of reading from disk every time
     
     // If we have IDs in our custom list, fetch details for each
     const animeDetails = [];
@@ -258,6 +313,7 @@ app.get('/api/anime', async (req, res) => {
         } catch (error) {
           // If AniList fails, use our stored custom data
           animeDetail = animeInfo;
+          console.error(`Failed to fetch anime details for ID ${animeInfo.id}:`, error.message);
         }
       }
       
@@ -274,7 +330,7 @@ app.get('/api/anime', async (req, res) => {
 // Get tagalog dubbed anime only
 app.get('/api/anime/tagalog', async (req, res) => {
   try {
-    const customAnimeList = readData(CUSTOM_ANIME_FILE);
+    // Use the in-memory list instead of reading from disk
     
     // Filter for anime with tagalog dub
     const tagalogAnimeIds = customAnimeList
@@ -344,7 +400,6 @@ app.get('/api/anime/:id', async (req, res) => {
       const animeDetail = formatAnimeData(response.data);
       
       // Check if there's tagalog dub info in custom anime list
-      const customAnimeList = readData(CUSTOM_ANIME_FILE);
       const storedAnime = customAnimeList.find(a => a.id === animeId);
       if (storedAnime && storedAnime.hasTagalogDub !== undefined) {
         animeDetail.hasTagalogDub = storedAnime.hasTagalogDub;
@@ -358,7 +413,6 @@ app.get('/api/anime/:id', async (req, res) => {
       res.json(animeDetail);
     } catch (anilistError) {
       // If AniList API fails, check our custom data
-      const customAnimeList = readData(CUSTOM_ANIME_FILE);
       const foundAnime = customAnimeList.find(a => a.id === animeId);
       
       if (foundAnime) {
@@ -375,14 +429,14 @@ app.get('/api/anime/:id', async (req, res) => {
 
 // Get all episodes (for dashboard)
 app.get('/api/episodes', (req, res) => {
-  const episodes = readData(EPISODES_FILE);
+  // Use in-memory data instead of reading from disk
   res.json(episodes);
 });
 
 // Get episodes for an anime
 app.get('/api/anime/:id/episodes', (req, res) => {
   const animeId = req.params.id;
-  const episodes = readData(EPISODES_FILE);
+  // Use in-memory data instead of reading from disk
   const animeEpisodes = episodes.filter(e => e.animeId === animeId);
   
   res.json(animeEpisodes);
@@ -391,7 +445,7 @@ app.get('/api/anime/:id/episodes', (req, res) => {
 // Get specific episode
 app.get('/api/episodes/:id', (req, res) => {
   const episodeId = req.params.id;
-  const episodes = readData(EPISODES_FILE);
+  // Use in-memory data instead of reading from disk
   const foundEpisode = episodes.find(e => e.id === episodeId);
   
   if (!foundEpisode) {
@@ -403,17 +457,17 @@ app.get('/api/episodes/:id', (req, res) => {
 
 // Get scheduled anime releases
 app.get('/api/scheduled', (req, res) => {
-  const scheduledAnime = readData(SCHEDULED_ANIME_FILE);
+  // Use in-memory data instead of reading from disk
   
   // Sort by release date (ascending)
-  scheduledAnime.sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
+  const sortedSchedule = [...scheduledAnime].sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
   
-  res.json(scheduledAnime);
+  res.json(sortedSchedule);
 });
 
 // Get upcoming releases (for integration with other sites)
 app.get('/api/upcoming', (req, res) => {
-  const scheduledAnime = readData(SCHEDULED_ANIME_FILE);
+  // Use in-memory data instead of reading from disk
   const now = new Date();
   
   // Filter for upcoming releases only
@@ -422,6 +476,39 @@ app.get('/api/upcoming', (req, res) => {
     .sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
   
   res.json(upcomingReleases);
+});
+
+// Search for anime in the library (instead of AniList)
+app.get('/api/library/search', (req, res) => {
+  const { query } = req.query;
+  
+  if (!query) {
+    return res.status(400).json({ error: 'Query parameter required' });
+  }
+  
+  try {
+    // Search through in-memory cache of anime
+    const searchTerm = query.toLowerCase();
+    const matchingAnime = [];
+    
+    for (const animeInfo of customAnimeList) {
+      const animeDetail = animeCache.get(animeInfo.id);
+      
+      if (animeDetail) {
+        const title = animeDetail.title?.toLowerCase() || '';
+        const titleRomaji = animeDetail.titleRomaji?.toLowerCase() || '';
+        
+        if (title.includes(searchTerm) || titleRomaji.includes(searchTerm)) {
+          matchingAnime.push(animeDetail);
+        }
+      }
+    }
+    
+    res.json(matchingAnime);
+  } catch (error) {
+    console.error("Error searching library:", error);
+    res.status(500).json({ error: 'Failed to search anime library' });
+  }
 });
 
 // Add anime to custom list
@@ -434,7 +521,6 @@ app.post('/api/anime', async (req, res) => {
     }
     
     // Check if anime already exists in our list
-    const customAnimeList = readData(CUSTOM_ANIME_FILE);
     if (customAnimeList.some(a => a.id === anilistId.toString())) {
       return res.status(400).json({ error: 'Anime already exists in the list' });
     }
@@ -449,11 +535,14 @@ app.post('/api/anime', async (req, res) => {
     const animeDetail = formatAnimeData(response.data);
     
     // Add to our custom list with Tagalog dub info
-    customAnimeList.push({ 
+    const newAnimeEntry = { 
       id: anilistId.toString(),
       hasTagalogDub: hasTagalogDub === true
-    });
+    };
     
+    customAnimeList.push(newAnimeEntry);
+    
+    // Write to disk immediately to prevent data loss
     if (writeData(CUSTOM_ANIME_FILE, customAnimeList)) {
       // Add tagalog dub info
       animeDetail.hasTagalogDub = hasTagalogDub === true;
@@ -478,9 +567,6 @@ app.post('/api/anime', async (req, res) => {
 
 // Add new episode - simplified to only require animeId and server URLs
 app.post('/api/episodes', async (req, res) => {
-  const episodes = readData(EPISODES_FILE);
-  const customAnimeList = readData(CUSTOM_ANIME_FILE);
-  
   // Check if anime exists in our list
   const animeExists = customAnimeList.some(a => a.id === req.body.animeId);
   
@@ -510,6 +596,7 @@ app.post('/api/episodes', async (req, res) => {
   
   episodes.push(newEpisode);
   
+  // Write to disk immediately to prevent data loss
   if (writeData(EPISODES_FILE, episodes)) {
     // Update anime's Tagalog dub status if this episode has Tagalog dub
     if (req.body.hasTagalogDub === true) {
@@ -561,8 +648,6 @@ app.post('/api/scheduled', async (req, res) => {
     const animeDetail = formatAnimeData(response.data);
     
     // Add to scheduled releases
-    const scheduledAnime = readData(SCHEDULED_ANIME_FILE);
-    
     const newScheduledAnime = {
       id: Date.now().toString(),
       animeId: anilistId.toString(),
@@ -576,6 +661,7 @@ app.post('/api/scheduled', async (req, res) => {
     
     scheduledAnime.push(newScheduledAnime);
     
+    // Write to disk immediately to prevent data loss
     if (writeData(SCHEDULED_ANIME_FILE, scheduledAnime)) {
       res.status(201).json(newScheduledAnime);
     } else {
@@ -595,7 +681,6 @@ app.post('/api/scheduled', async (req, res) => {
 // Update episode
 app.put('/api/episodes/:id', (req, res) => {
   const episodeId = req.params.id;
-  const episodes = readData(EPISODES_FILE);
   const episodeIndex = episodes.findIndex(e => e.id === episodeId);
   
   if (episodeIndex === -1) {
@@ -610,7 +695,6 @@ app.put('/api/episodes/:id', (req, res) => {
   
   // Check if this is setting Tagalog dub for the first time
   if (req.body.hasTagalogDub === true && episodes[episodeIndex].hasTagalogDub !== true) {
-    const customAnimeList = readData(CUSTOM_ANIME_FILE);
     const animeIndex = customAnimeList.findIndex(a => a.id === episodes[episodeIndex].animeId);
     
     if (animeIndex !== -1) {
@@ -626,6 +710,7 @@ app.put('/api/episodes/:id', (req, res) => {
     }
   }
   
+  // Write to disk immediately
   if (writeData(EPISODES_FILE, episodes)) {
     res.json(episodes[episodeIndex]);
   } else {
@@ -636,7 +721,6 @@ app.put('/api/episodes/:id', (req, res) => {
 // Update scheduled anime
 app.put('/api/scheduled/:id', async (req, res) => {
   const scheduleId = req.params.id;
-  const scheduledAnime = readData(SCHEDULED_ANIME_FILE);
   const scheduleIndex = scheduledAnime.findIndex(s => s.id === scheduleId);
   
   if (scheduleIndex === -1) {
@@ -654,6 +738,7 @@ app.put('/api/scheduled/:id', async (req, res) => {
     id: scheduleId // Ensure ID remains the same
   };
   
+  // Write to disk immediately
   if (writeData(SCHEDULED_ANIME_FILE, scheduledAnime)) {
     res.json(scheduledAnime[scheduleIndex]);
   } else {
@@ -670,7 +755,6 @@ app.put('/api/anime/:id/tagalog', (req, res) => {
     return res.status(400).json({ error: 'hasTagalogDub field is required' });
   }
   
-  const customAnimeList = readData(CUSTOM_ANIME_FILE);
   const animeIndex = customAnimeList.findIndex(a => a.id === animeId);
   
   if (animeIndex === -1) {
@@ -680,6 +764,7 @@ app.put('/api/anime/:id/tagalog', (req, res) => {
   // Update the Tagalog dub status
   customAnimeList[animeIndex].hasTagalogDub = hasTagalogDub === true;
   
+  // Write to disk immediately
   if (writeData(CUSTOM_ANIME_FILE, customAnimeList)) {
     // Update cache if exists
     if (animeCache.has(animeId)) {
@@ -697,9 +782,6 @@ app.put('/api/anime/:id/tagalog', (req, res) => {
 // Remove anime from list
 app.delete('/api/anime/:id', (req, res) => {
   const animeId = req.params.id;
-  let customAnimeList = readData(CUSTOM_ANIME_FILE);
-  let episodes = readData(EPISODES_FILE);
-  let scheduledAnime = readData(SCHEDULED_ANIME_FILE);
   
   // Remove from custom list
   customAnimeList = customAnimeList.filter(a => a.id !== animeId);
@@ -713,6 +795,7 @@ app.delete('/api/anime/:id', (req, res) => {
   // Clear from cache
   animeCache.delete(animeId);
   
+  // Write to disk immediately
   if (
     writeData(CUSTOM_ANIME_FILE, customAnimeList) && 
     writeData(EPISODES_FILE, episodes) &&
@@ -727,8 +810,6 @@ app.delete('/api/anime/:id', (req, res) => {
 // Delete episode
 app.delete('/api/episodes/:id', (req, res) => {
   const episodeId = req.params.id;
-  let episodes = readData(EPISODES_FILE);
-  
   const episodeIndex = episodes.findIndex(e => e.id === episodeId);
   
   if (episodeIndex === -1) {
@@ -737,6 +818,7 @@ app.delete('/api/episodes/:id', (req, res) => {
   
   episodes.splice(episodeIndex, 1);
   
+  // Write to disk immediately
   if (writeData(EPISODES_FILE, episodes)) {
     res.json({ message: 'Episode deleted successfully' });
   } else {
@@ -747,8 +829,6 @@ app.delete('/api/episodes/:id', (req, res) => {
 // Delete scheduled anime
 app.delete('/api/scheduled/:id', (req, res) => {
   const scheduleId = req.params.id;
-  let scheduledAnime = readData(SCHEDULED_ANIME_FILE);
-  
   const scheduleIndex = scheduledAnime.findIndex(s => s.id === scheduleId);
   
   if (scheduleIndex === -1) {
@@ -757,6 +837,7 @@ app.delete('/api/scheduled/:id', (req, res) => {
   
   scheduledAnime.splice(scheduleIndex, 1);
   
+  // Write to disk immediately
   if (writeData(SCHEDULED_ANIME_FILE, scheduledAnime)) {
     res.json({ message: 'Scheduled anime deleted successfully' });
   } else {
@@ -790,10 +871,6 @@ app.get('/api/search', async (req, res) => {
 
 // Export data
 app.get('/api/export', (req, res) => {
-  const customAnimeList = readData(CUSTOM_ANIME_FILE);
-  const episodes = readData(EPISODES_FILE);
-  const scheduledAnime = readData(SCHEDULED_ANIME_FILE);
-  
   const exportData = {
     anime: customAnimeList,
     episodes,
@@ -805,9 +882,65 @@ app.get('/api/export', (req, res) => {
   res.json(exportData);
 });
 
+// Import data endpoint
+app.post('/api/import', (req, res) => {
+  try {
+    const importData = req.body;
+    
+    if (!importData || typeof importData !== 'object') {
+      return res.status(400).json({ error: 'Invalid import data format' });
+    }
+    
+    // Validate the import data structure
+    if (!Array.isArray(importData.anime) || !Array.isArray(importData.episodes) || !Array.isArray(importData.scheduled)) {
+      return res.status(400).json({ error: 'Import data missing required arrays' });
+    }
+    
+    // Update in-memory data
+    customAnimeList = importData.anime;
+    episodes = importData.episodes;
+    scheduledAnime = importData.scheduled;
+    
+    // Clear cache to force refresh
+    animeCache.clear();
+    
+    // Write to disk immediately
+    if (
+      writeData(CUSTOM_ANIME_FILE, customAnimeList) && 
+      writeData(EPISODES_FILE, episodes) &&
+      writeData(SCHEDULED_ANIME_FILE, scheduledAnime)
+    ) {
+      res.json({ 
+        message: 'Import successful', 
+        counts: {
+          anime: customAnimeList.length,
+          episodes: episodes.length,
+          scheduled: scheduledAnime.length
+        } 
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to write imported data to disk' });
+    }
+  } catch (error) {
+    console.error("Error importing data:", error);
+    res.status(500).json({ error: 'Failed to import data: ' + error.message });
+  }
+});
+
 // Health check endpoint for monitoring
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  const dataStatus = {
+    customAnimeCount: customAnimeList.length,
+    episodesCount: episodes.length,
+    scheduledCount: scheduledAnime.length,
+    cacheSize: animeCache.size
+  };
+  
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    dataStats: dataStatus
+  });
 });
 
 // Handle SPA routing for admin panel
@@ -819,11 +952,23 @@ app.get('*', (req, res) => {
 app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
   console.log(`API Documentation: http://${HOST}:${PORT}`);
+  console.log(`Data directory: ${DATA_DIR}`);
 });
 
 // Handle errors gracefully
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
+  
+  // Try to save data on critical error
+  try {
+    console.log("Attempting to save data before shutdown due to uncaught exception...");
+    writeData(CUSTOM_ANIME_FILE, customAnimeList);
+    writeData(EPISODES_FILE, episodes);
+    writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
+    console.log("Emergency data save completed");
+  } catch (saveError) {
+    console.error("Failed to save data during shutdown:", saveError);
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -833,6 +978,14 @@ process.on('unhandledRejection', (reason, promise) => {
 // Clean up resources before shutdown
 process.on('SIGINT', () => {
   console.log('Server shutting down...');
+  
+  // Save all data before exit
+  console.log("Saving data before shutdown...");
+  writeData(CUSTOM_ANIME_FILE, customAnimeList);
+  writeData(EPISODES_FILE, episodes);
+  writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
+  console.log("Final data save completed");
+  
   process.exit(0);
 });
 
@@ -842,6 +995,7 @@ setInterval(() => {
     .then(response => {
       if (response.data.status === 'ok') {
         console.log(`Health check passed at ${response.data.timestamp}`);
+        console.log(`Data stats: ${JSON.stringify(response.data.dataStats)}`);
       } else {
         console.error('Health check failed');
       }
@@ -850,3 +1004,43 @@ setInterval(() => {
       console.error('Health check error:', error.message);
     });
 }, 300000); // 5 minutes in milliseconds
+
+// Data backup job (every 24 hours)
+const backupInterval = 24 * 60 * 60 * 1000; // 24 hours
+setInterval(() => {
+  console.log("Running scheduled data backup...");
+  
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupDir = path.join(DATA_DIR, 'backups', timestamp);
+  
+  try {
+    // Create backup directory
+    fs.mkdirSync(backupDir, { recursive: true });
+    
+    // Copy data files to backup
+    fs.copyFileSync(CUSTOM_ANIME_FILE, path.join(backupDir, 'custom_anime.json'));
+    fs.copyFileSync(EPISODES_FILE, path.join(backupDir, 'episodes.json'));
+    fs.copyFileSync(SCHEDULED_ANIME_FILE, path.join(backupDir, 'scheduled_anime.json'));
+    
+    console.log(`Backup completed to ${backupDir}`);
+    
+    // Clean up old backups (keep only the last 7)
+    const backupsBaseDir = path.join(DATA_DIR, 'backups');
+    if (fs.existsSync(backupsBaseDir)) {
+      const backupFolders = fs.readdirSync(backupsBaseDir)
+        .filter(f => fs.statSync(path.join(backupsBaseDir, f)).isDirectory())
+        .sort((a, b) => b.localeCompare(a)); // Sort descending (newest first)
+      
+      // Delete older backups beyond the 7th one
+      if (backupFolders.length > 7) {
+        backupFolders.slice(7).forEach(folder => {
+          const folderPath = path.join(backupsBaseDir, folder);
+          fs.rmSync(folderPath, { recursive: true, force: true });
+          console.log(`Removed old backup: ${folderPath}`);
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Backup operation failed:", error);
+  }
+}, backupInterval);
