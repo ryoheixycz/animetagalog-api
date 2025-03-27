@@ -787,7 +787,7 @@
                         </table>
                     </div>
                 </div>
-                <div class="px-6 py-4 border-t border-dark-500 flex justify-end gap-2">
+               <div class="px-6 py-4 border-t border-dark-500 flex justify-end gap-2">
                     <button type="button" class="px-4 py-2 bg-dark-500 border border-dark-400 text-gray-300 rounded-lg hover:bg-dark-400 transition-colors shadow-dark" id="cancelBulkUploadBtn">
                         Cancel
                     </button>
@@ -1010,6 +1010,9 @@
             initAnimeLibrary();
             initAddAnime();
             initScheduleFeature();
+            
+            // Initialize Tagalog Dub Toggle
+            initToggleTagalogDub();
             
             // Add event listeners
             document.getElementById('refresh-dashboard').addEventListener('click', loadDashboardData);
@@ -1628,10 +1631,10 @@
                                     <div class="p-4">
                                         <h3 class="font-semibold text-white line-clamp-1 mb-1">${anime.title}</h3>
                                         <div class="flex flex-wrap gap-1 mb-2">
-                                            ${anime.genres.slice(0, 3).map(genre => 
+                                            ${anime.genres?.slice(0, 3).map(genre => 
                                                 `<span class="px-2 py-0.5 rounded text-xs font-medium bg-dark-500 text-gray-300">${genre}</span>`
-                                            ).join('')}
-                                            ${anime.genres.length > 3 ? `<span class="px-2 py-0.5 rounded text-xs font-medium bg-dark-500 text-gray-300">+${anime.genres.length - 3}</span>` : ''}
+                                            ).join('') || ''}
+                                            ${anime.genres?.length > 3 ? `<span class="px-2 py-0.5 rounded text-xs font-medium bg-dark-500 text-gray-300">+${anime.genres.length - 3}</span>` : ''}
                                         </div>
                                         <p class="text-sm text-gray-400 line-clamp-2 mb-4">${anime.description || 'No description available'}</p>
                                         <div class="flex items-center justify-between mt-auto">
@@ -1821,6 +1824,8 @@
         
         // Helper function to get status badge class
         function getStatusBadgeClass(status) {
+            if (!status) return 'bg-dark-400 text-gray-300';
+            
             status = status.toUpperCase();
             switch(status) {
                 case 'FINISHED':
@@ -1860,12 +1865,14 @@
             descriptionElement.textContent = anime.description || 'No description available';
             
             genresContainer.innerHTML = '';
-            anime.genres.forEach(genre => {
-                const badge = document.createElement('span');
-                badge.className = 'px-2 py-1 rounded text-xs font-medium bg-dark-500 text-gray-300';
-                badge.textContent = genre;
-                genresContainer.appendChild(badge);
-            });
+            if (anime.genres && Array.isArray(anime.genres)) {
+                anime.genres.forEach(genre => {
+                    const badge = document.createElement('span');
+                    badge.className = 'px-2 py-1 rounded text-xs font-medium bg-dark-500 text-gray-300';
+                    badge.textContent = genre;
+                    genresContainer.appendChild(badge);
+                });
+            }
             
             episodesElement.textContent = anime.episodeCount || 'Unknown';
             
@@ -1891,6 +1898,121 @@
             
             // Add anime ID to add button
             document.getElementById('addSelectedAnime').setAttribute('data-anime-id', anime.id);
+        }
+        
+        // Initialize Toggle Tagalog Dub functionality
+        function initToggleTagalogDub() {
+            document.getElementById('toggleTagalogDub').addEventListener('click', function() {
+                const animeId = document.getElementById('episodeAnimeSelector').value;
+                
+                if (!animeId) {
+                    showError('No anime selected');
+                    return;
+                }
+                
+                // Fetch current anime details
+                fetch(`${API_URL}/anime/${animeId}`)
+                    .then(response => response.json())
+                    .then(anime => {
+                        // Set up the toggle modal
+                        document.getElementById('dubStatusAnimeThumbnail').src = anime.thumbnail;
+                        document.getElementById('dubStatusAnimeTitle').textContent = anime.title;
+                        
+                        // Show the modal
+                        showModal('toggleTagalogDubModal');
+                        
+                        // Get the buttons
+                        const hasTagalogBtn = document.getElementById('setHasTagalogDubBtn');
+                        const noTagalogBtn = document.getElementById('setNoTagalogDubBtn');
+                        
+                        // Clear any previous event listeners
+                        const newHasTagalogBtn = hasTagalogBtn.cloneNode(true);
+                        const newNoTagalogBtn = noTagalogBtn.cloneNode(true);
+                        hasTagalogBtn.parentNode.replaceChild(newHasTagalogBtn, hasTagalogBtn);
+                        noTagalogBtn.parentNode.replaceChild(newNoTagalogBtn, noTagalogBtn);
+                        
+                        // Highlight current status
+                        if (anime.hasTagalogDub) {
+                            newHasTagalogBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                            newNoTagalogBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        } else {
+                            newHasTagalogBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                            newNoTagalogBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        }
+                        
+                        // Set up button event handlers
+                        newHasTagalogBtn.id = 'setHasTagalogDubBtn';
+                        newNoTagalogBtn.id = 'setNoTagalogDubBtn';
+                        
+                        newHasTagalogBtn.onclick = function() {
+                            if (!anime.hasTagalogDub) {
+                                updateAnimeTagalogStatus(animeId, true);
+                            }
+                        };
+                        
+                        newNoTagalogBtn.onclick = function() {
+                            if (anime.hasTagalogDub) {
+                                updateAnimeTagalogStatus(animeId, false);
+                            }
+                        };
+                    })
+                    .catch(error => {
+                        showError('Failed to load anime details');
+                        console.error(error);
+                    });
+            });
+        }
+        
+        // Update anime's Tagalog dub status
+        function updateAnimeTagalogStatus(animeId, hasTagalogDub) {
+            showLoading();
+            
+            fetch(`${API_URL}/anime/${animeId}/tagalog`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ hasTagalogDub: hasTagalogDub })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update Tagalog dub status');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // Close the modal
+                document.getElementById('toggleTagalogDubModal').classList.add('hidden');
+                
+                // Show success message
+                showSuccess(`Tagalog dub status updated to: ${hasTagalogDub ? 'Available' : 'Not Available'}`);
+                
+                // Refresh anime details
+                return fetch(`${API_URL}/anime/${animeId}`)
+                    .then(response => response.json())
+                    .then(anime => {
+                        updateTagalogDubStatus(anime);
+                        hideLoading();
+                    });
+            })
+            .catch(error => {
+                showError('Failed to update Tagalog dub status');
+                console.error(error);
+                hideLoading();
+            });
+        }
+        
+        // Update Tagalog dub status UI
+        function updateTagalogDubStatus(anime) {
+            const statusBadge = document.getElementById('tagalogStatusBadge');
+            
+            if (anime.hasTagalogDub) {
+                statusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-secondary-900/60 text-secondary-300 flex items-center gap-1';
+                statusBadge.innerHTML = '<i class="ph-translate"></i> Tagalog Dub Available';
+            } else {
+                statusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-dark-400 text-gray-300 flex items-center gap-1';
+                statusBadge.innerHTML = '<i class="ph-x"></i> No Tagalog Dub';
+            }
         }
         
         // Initialize Episodes Management
@@ -1950,58 +2072,6 @@
                         console.error('Error loading anime details:', error);
                         showError('Failed to load anime details: ' + error.message);
                         hideLoading();
-                    });
-            });
-            
-            // Toggle Tagalog Dub Status
-            document.getElementById('toggleTagalogDub').addEventListener('click', function() {
-                const animeId = document.getElementById('episodeAnimeSelector').value;
-                
-                if (!animeId) {
-                    showError('No anime selected');
-                    return;
-                }
-                
-                // Fetch current anime details
-                fetch(`${API_URL}/anime/${animeId}`)
-                    .then(response => response.json())
-                    .then(anime => {
-                        // Set up the toggle modal
-                        document.getElementById('dubStatusAnimeThumbnail').src = anime.thumbnail;
-                        document.getElementById('dubStatusAnimeTitle').textContent = anime.title;
-                        
-                        // Show the modal
-                        showModal('toggleTagalogDubModal');
-                        
-                        // Handle toggle buttons
-                        const hasTagalogBtn = document.getElementById('setHasTagalogDubBtn');
-                        const noTagalogBtn = document.getElementById('setNoTagalogDubBtn');
-                        
-                        // Highlight current status
-                        if (anime.hasTagalogDub) {
-                            hasTagalogBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                            noTagalogBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                        } else {
-                            hasTagalogBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                            noTagalogBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                        }
-                        
-                        // Set up button event handlers
-                        hasTagalogBtn.onclick = function() {
-                            if (!anime.hasTagalogDub) {
-                                updateAnimeTagalogStatus(animeId, true);
-                            }
-                        };
-                        
-                        noTagalogBtn.onclick = function() {
-                            if (anime.hasTagalogDub) {
-                                updateAnimeTagalogStatus(animeId, false);
-                            }
-                        };
-                    })
-                    .catch(error => {
-                        showError('Failed to load anime details');
-                        console.error(error);
                     });
             });
             
@@ -2091,7 +2161,7 @@
                     return;
                 }
                 
-            // Create a temporary container to parse the HTML
+                // Create a temporary container to parse the HTML
                 const tempContainer = document.createElement('div');
                 tempContainer.innerHTML = bulkHtml;
                 
@@ -2275,58 +2345,6 @@
                     hideLoading();
                 });
             });
-        }
-        
-        // Update anime's Tagalog dub status
-        function updateAnimeTagalogStatus(animeId, hasTagalogDub) {
-            showLoading();
-            
-            fetch(`${API_URL}/anime/${animeId}/tagalog`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ hasTagalogDub: hasTagalogDub })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to update Tagalog dub status');
-                }
-                return response.json();
-            })
-            .then(() => {
-                // Close the modal
-                document.getElementById('toggleTagalogDubModal').classList.add('hidden');
-                
-                // Show success message
-                showSuccess(`Tagalog dub status updated to: ${hasTagalogDub ? 'Available' : 'Not Available'}`);
-                
-                // Refresh anime details
-                return fetch(`${API_URL}/anime/${animeId}`)
-                    .then(response => response.json())
-                    .then(anime => {
-                        updateTagalogDubStatus(anime);
-                        hideLoading();
-                    });
-            })
-            .catch(error => {
-                showError('Failed to update Tagalog dub status');
-                console.error(error);
-                hideLoading();
-            });
-        }
-        
-        // Update Tagalog dub status UI
-        function updateTagalogDubStatus(anime) {
-            const statusBadge = document.getElementById('tagalogStatusBadge');
-            
-            if (anime.hasTagalogDub) {
-                statusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-secondary-900/60 text-secondary-300 flex items-center gap-1';
-                statusBadge.innerHTML = '<i class="ph-translate"></i> Tagalog Dub Available';
-            } else {
-                statusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-dark-400 text-gray-300 flex items-center gap-1';
-                statusBadge.innerHTML = '<i class="ph-x"></i> No Tagalog Dub';
-            }
         }
         
         // Show bulk episode preview
