@@ -1,0 +1,3035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeStream Admin Panel</title>
+    <meta http-equiv="refresh" content="1800"> <!-- Refresh every 30 minutes to keep connection -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #6c5ce7;
+            --secondary-color: #a29bfe;
+            --accent-color: #fd79a8;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            --text-color: #2d3436;
+            --light-bg: #f5f6fa;
+            --dark-bg: #2f3640;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            --sidebar-width: 250px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-header i {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.2rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #fff;
+            padding: 0.8rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-menu i {
+            margin-right: 0.8rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .content-wrapper {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.2rem;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card i {
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .stat-card.primary i { color: var(--primary-color); }
+        .stat-card.success i { color: var(--success-color); }
+        .stat-card.warning i { color: var(--warning-color); }
+        .stat-card.info i { color: var(--info-color); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card.primary .stat-value { color: var(--primary-color); }
+        .stat-card.success .stat-value { color: var(--success-color); }
+        .stat-card.warning .stat-value { color: var(--warning-color); }
+        .stat-card.info .stat-value { color: var(--info-color); }
+
+        .stat-label {
+            color: #777;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-col {
+            flex: 1;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5d4edb;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            font-weight: 600;
+            background-color: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-icon i {
+            font-size: 1rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .pagination a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            margin: 0 5px;
+            border-radius: 5px;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .pagination a:hover, .pagination a.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+
+        .badge-warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--warning-color);
+        }
+
+        .badge-danger {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger-color);
+        }
+
+        .badge-info {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: var(--info-color);
+        }
+
+        .badge-primary {
+            background-color: rgba(108, 92, 231, 0.2);
+            color: var(--primary-color);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .alert i {
+            margin-right: 0.8rem;
+            font-size: 1.2rem;
+        }
+
+        .alert-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border-left: 4px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            border-left: 4px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .alert-danger {
+            background-color: rgba(231, 76, 60, 0.2);
+            border-left: 4px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .alert-info {
+            background-color: rgba(52, 152, 219, 0.2);
+            border-left: 4px solid var(--info-color);
+            color: var(--info-color);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Bulk upload styling */
+        .dropzone {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            margin-bottom: 1.5rem;
+        }
+
+        .dropzone:hover {
+            border-color: var(--primary-color);
+        }
+
+        .dropzone i {
+            font-size: 2rem;
+            color: #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .dropzone.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(108, 92, 231, 0.05);
+        }
+
+        .episode-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+        }
+
+        .episode-item {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .episode-item:last-child {
+            border-bottom: none;
+        }
+
+        .episode-item-title {
+            font-weight: 500;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Checkbox and toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        /* Modal styling */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background-color: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 1.2rem;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #999;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--danger-color);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1.2rem;
+            background-color: #f8f9fa;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        /* Server settings section */
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-online {
+            background-color: var(--success-color);
+        }
+
+        .status-offline {
+            background-color: var(--danger-color);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+            
+            .content-wrapper {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .stat-card {
+                min-width: unset;
+            }
+        }
+
+        /* Keepalive hidden iframe */
+        .keepalive-frame {
+            width: 0;
+            height: 0;
+            border: 0;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-play-circle"></i>
+            <h2>AnimeStream Admin</h2>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li><a href="#" class="nav-link active" data-target="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="#" class="nav-link" data-target="anime-manager"><i class="fas fa-film"></i> Anime Manager</a></li>
+            <li><a href="#" class="nav-link" data-target="episode-manager"><i class="fas fa-list-ul"></i> Episode Manager</a></li>
+            <li><a href="#" class="nav-link" data-target="scheduled-releases"><i class="fas fa-calendar-alt"></i> Scheduled Releases</a></li>
+            <li><a href="#" class="nav-link" data-target="bulk-import"><i class="fas fa-file-import"></i> Bulk Import</a></li>
+            <li><a href="#" class="nav-link" data-target="backup-restore"><i class="fas fa-cloud-download-alt"></i> Backup & Restore</a></li>
+            <li><a href="#" class="nav-link" data-target="server-settings"><i class="fas fa-server"></i> Server Settings</a></li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <p>AnimeStream Admin Panel</p>
+            <p>Version 1.2.0</p>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="header">
+                <h1>Dashboard</h1>
+                <div class="header-actions">
+                    <a href="/" class="btn btn-primary"><i class="fas fa-home"></i> Back to Site</a>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <i class="fas fa-film"></i>
+                    <div class="stat-value" id="anime-count">0</div>
+                    <div class="stat-label">Anime</div>
+                </div>
+                
+                <div class="stat-card success">
+                    <i class="fas fa-list-ul"></i>
+                    <div class="stat-value" id="episodes-count">0</div>
+                    <div class="stat-label">Episodes</div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <i class="fas fa-microphone-alt"></i>
+                    <div class="stat-value" id="tagalog-count">0</div>
+                    <div class="stat-label">Tagalog Dubs</div>
+                </div>
+                
+                <div class="stat-card info">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div class="stat-value" id="upcoming-count">0</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Recent Activity</h2>
+                </div>
+                <div class="card-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Anime</th>
+                                    <th>Action</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-activity">
+                                <tr>
+                                    <td colspan="3" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Quick Actions</h2>
+                </div>
+                <div class="card-content">
+                    <div class="form-row">
+                        <button class="btn btn-primary" id="add-anime-btn"><i class="fas fa-plus"></i> Add New Anime</button>
+                        <button class="btn btn-success" id="add-episode-btn"><i class="fas fa-plus"></i> Add New Episode</button>
+                        <button class="btn btn-warning" id="schedule-btn"><i class="fas fa-calendar-plus"></i> Schedule Release</button>
+                        <button class="btn btn-info" id="bulk-import-btn"><i class="fas fa-file-import"></i> Bulk Import</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Anime Manager Section -->
+        <section id="anime-manager" class="content-section">
+            <div class="header">
+                <h1>Anime Manager</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="add-anime-btn2"><i class="fas fa-plus"></i> Add New Anime</button>
+                </div>
+            </div>
+            
+            <!-- Search and Filter -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Search & Filter</h2>
+                </div>
+                <div class="card-content">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="anime-search">Search Anime</label>
+                                <input type="text" id="anime-search" class="form-control" placeholder="Search by title...">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="anime-filter">Filter</label>
+                                <select id="anime-filter" class="form-control">
+                                    <option value="all">All Anime</option>
+                                    <option value="tagalog">Tagalog Dubbed Only</option>
+                                    <option value="recent">Recently Added</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Anime List -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Anime List</h2>
+                </div>
+                <div class="card-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Episodes</th>
+                                    <th>Tagalog Dub</th>
+                                    <th>Date Added</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="anime-list">
+                                <tr>
+                                    <td colspan="5" class="text-center">Loading anime list...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Episode Manager Section -->
+        <section id="episode-manager" class="content-section">
+            <div class="header">
+                <h1>Episode Manager</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="add-episode-btn2"><i class="fas fa-plus"></i> Add New Episode</button>
+                </div>
+            </div>
+            
+            <!-- Search and Filter -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Search & Filter</h2>
+                </div>
+                <div class="card-content">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="episode-search">Search Episodes</label>
+                                <input type="text" id="episode-search" class="form-control" placeholder="Search by anime title...">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="episode-anime-filter">Select Anime</label>
+                                <select id="episode-anime-filter" class="form-control">
+                                    <option value="all">All Anime</option>
+                                    <!-- Anime options will be populated here -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Episode List -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Episode List</h2>
+                </div>
+                <div class="card-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Anime</th>
+                                    <th>Episode</th>
+                                    <th>Tagalog Dub</th>
+                                    <th>Date Added</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="episode-list">
+                                <tr>
+                                    <td colspan="5" class="text-center">Loading episodes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Scheduled Releases Section -->
+        <section id="scheduled-releases" class="content-section">
+            <div class="header">
+                <h1>Scheduled Releases</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="add-schedule-btn"><i class="fas fa-plus"></i> Schedule New Release</button>
+                </div>
+            </div>
+            
+            <!-- Upcoming Releases -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Upcoming Releases</h2>
+                </div>
+                <div class="card-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Anime</th>
+                                    <th>Release Date</th>
+                                    <th>Tagalog Dub</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduled-list">
+                                <tr>
+                                    <td colspan="5" class="text-center">Loading scheduled releases...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Bulk Import Section -->
+        <section id="bulk-import" class="content-section">
+            <div class="header">
+                <h1>Bulk Import</h1>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Import Episodes from HTML</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <p>This tool allows you to import multiple episodes at once using HTML code with select options.</p>
+                            <p>Format should match the pattern in your paste.txt file with data-server1 and data-server2 attributes.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="select-anime">Select Anime</label>
+                        <select id="select-anime" class="form-control">
+                            <option value="">-- Select an anime --</option>
+                            <!-- Anime options will be populated here -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tagalog-dub-toggle">Has Tagalog Dub?</label>
+                        <label class="switch">
+                            <input type="checkbox" id="tagalog-dub-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="html-input">Paste HTML Code</label>
+                        <textarea id="html-input" class="form-control" placeholder="Paste your select element with options here..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="parse-html-btn" class="btn btn-primary">Parse HTML</button>
+                    </div>
+                    
+                    <!-- Preview Section -->
+                    <div id="preview-section" class="hidden">
+                        <h3>Preview Episodes</h3>
+                        <div class="episode-list" id="episode-preview-list">
+                            <!-- Preview episodes will be inserted here -->
+                        </div>
+                        
+                        <div class="form-group">
+                            <button id="import-episodes-btn" class="btn btn-success">Import Episodes</button>
+                            <button id="cancel-import-btn" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Import from JSON Backup</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <p>Importing from a JSON backup will replace all existing data in the database.</p>
+                            <p>Make sure to backup your current data before proceeding.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="json-file">Select JSON Backup File</label>
+                        <input type="file" id="json-file" class="form-control" accept=".json">
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="import-json-btn" class="btn btn-warning">Import JSON Backup</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Backup & Restore Section -->
+        <section id="backup-restore" class="content-section">
+            <div class="header">
+                <h1>Backup & Restore</h1>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Backup Data</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <p>Regularly backup your data to prevent loss.</p>
+                            <p>All backups include anime, episodes, and scheduled releases.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="create-backup-btn" class="btn btn-primary">Create & Download Backup</button>
+                    </div>
+                    
+                    <!-- Backup UI Container -->
+                    <div id="backup-container"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Auto-Backup Settings</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <p>Browser auto-backup is enabled.</p>
+                            <p>Your data is automatically backed up to browser storage every 15 minutes.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="auto-backup-interval">Auto-Backup Interval (minutes)</label>
+                        <select id="auto-backup-interval" class="form-control">
+                            <option value="5">Every 5 minutes</option>
+                            <option value="15" selected>Every 15 minutes</option>
+                            <option value="30">Every 30 minutes</option>
+                            <option value="60">Every hour</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="manual-backup-btn" class="btn btn-success">Backup Now</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Keep Server Alive</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <p>On free Render deployments, the server will sleep after 15 minutes of inactivity.</p>
+                            <p>Keep this page open to prevent the server from sleeping.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <a href="/keepalive" target="_blank" class="btn btn-warning">Open Keepalive Page</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Server Settings Section -->
+        <section id="server-settings" class="content-section">
+            <div class="header">
+                <h1>Server Settings</h1>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Server Status</h2>
+                </div>
+                <div class="card-content">
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <i class="fas fa-server"></i>
+                            <div class="server-status">
+                                <span class="status-indicator status-online"></span>
+                                <span>Online</span>
+                            </div>
+                            <div class="stat-label">Server Status</div>
+                        </div>
+                        
+                        <div class="stat-card success">
+                            <i class="fas fa-memory"></i>
+                            <div class="stat-value" id="cache-size">0</div>
+                            <div class="stat-label">Cache Size</div>
+                        </div>
+                        
+                        <div class="stat-card info">
+                            <i class="fas fa-clock"></i>
+                            <div class="stat-value" id="uptime">0</div>
+                            <div class="stat-label">Uptime (mins)</div>
+                        </div>
+                        
+                        <div class="stat-card warning">
+                            <i class="fas fa-sync-alt"></i>
+                            <div class="stat-value" id="last-sync">N/A</div>
+                            <div class="stat-label">Last Sync</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <button id="check-health-btn" class="btn btn-primary">Check Server Health</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Cache Management</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <p>AnimeStream uses a cache to reduce API calls to external services.</p>
+                            <p>You can clear the cache if you encounter any issues.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="clear-cache-btn" class="btn btn-warning">Clear Cache</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>About</h2>
+                </div>
+                <div class="card-content">
+                    <p><strong>AnimeStream Admin Panel</strong> - Version 1.2.0</p>
+                    <p>Built for Render free tier deployments with persistence improvements.</p>
+                    <p>Last updated: March 30, 2025</p>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Modals -->
+    <!-- Add Anime Modal -->
+    <div id="add-anime-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Anime</h3>
+                <span class="modal-close" data-modal="add-anime-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="anilist-id">AniList ID</label>
+                    <input type="text" id="anilist-id" class="form-control" placeholder="Enter AniList ID">
+                </div>
+                
+                <div class="form-group">
+                    <label for="anime-search-input">Or search by title</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="anime-search-input" class="form-control" placeholder="Search anime title...">
+                        <button id="search-anilist-btn" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+                
+                <div id="search-results" class="hidden">
+                    <h4 style="margin: 1rem 0;">Search Results</h4>
+                    <div id="search-results-list" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Search results will be inserted here -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="has-tagalog-dub">Has Tagalog Dub?</label>
+                    <label class="switch">
+                        <input type="checkbox" id="has-tagalog-dub">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="add-anime-modal">Cancel</button>
+                <button class="btn btn-primary" id="submit-add-anime">Add Anime</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Episode Modal -->
+    <div id="add-episode-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Episode</h3>
+                <span class="modal-close" data-modal="add-episode-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="episode-anime">Select Anime</label>
+                    <select id="episode-anime" class="form-control">
+                        <option value="">-- Select an anime --</option>
+                        <!-- Anime options will be populated here -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="episode-number">Episode Number</label>
+                    <input type="number" id="episode-number" class="form-control" min="1" placeholder="Enter episode number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="episode-title">Episode Title (Optional)</label>
+                    <input type="text" id="episode-title" class="form-control" placeholder="Enter episode title">
+                </div>
+                
+                <div class="form-group">
+                    <label for="iframe-src">Iframe Source (Server 1)</label>
+                    <input type="text" id="iframe-src" class="form-control" placeholder="Enter iframe embed URL">
+                </div>
+                
+                <div class="form-group">
+                    <label for="server2-url">Direct Video URL (Server 2)</label>
+                    <input type="text" id="server2-url" class="form-control" placeholder="Enter direct video URL">
+                </div>
+                
+                <div class="form-group">
+                    <label for="episode-tagalog-dub">Has Tagalog Dub?</label>
+                    <label class="switch">
+                        <input type="checkbox" id="episode-tagalog-dub">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="add-episode-modal">Cancel</button>
+                <button class="btn btn-primary" id="submit-add-episode">Add Episode</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Schedule Release Modal -->
+    <div id="schedule-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule New Release</h3>
+                <span class="modal-close" data-modal="schedule-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="schedule-anime">Select Anime</label>
+                    <select id="schedule-anime" class="form-control">
+                        <option value="">-- Select an anime --</option>
+                        <!-- Anime options will be populated here -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="release-date">Release Date</label>
+                    <input type="date" id="release-date" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="schedule-notes">Notes (Optional)</label>
+                    <textarea id="schedule-notes" class="form-control" placeholder="Enter notes about this release..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="schedule-tagalog-dub">Has Tagalog Dub?</label>
+                    <label class="switch">
+                        <input type="checkbox" id="schedule-tagalog-dub">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="schedule-modal">Cancel</button>
+                <button class="btn btn-primary" id="submit-schedule">Schedule Release</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Episode Modal -->
+    <div id="edit-episode-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Episode</h3>
+                <span class="modal-close" data-modal="edit-episode-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-episode-id">
+                
+                <div class="form-group">
+                    <label for="edit-episode-number">Episode Number</label>
+                    <input type="number" id="edit-episode-number" class="form-control" min="1" placeholder="Enter episode number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-episode-title">Episode Title (Optional)</label>
+                    <input type="text" id="edit-episode-title" class="form-control" placeholder="Enter episode title">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-iframe-src">Iframe Source (Server 1)</label>
+                    <input type="text" id="edit-iframe-src" class="form-control" placeholder="Enter iframe embed URL">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-server2-url">Direct Video URL (Server 2)</label>
+                    <input type="text" id="edit-server2-url" class="form-control" placeholder="Enter direct video URL">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-episode-tagalog-dub">Has Tagalog Dub?</label>
+                    <label class="switch">
+                        <input type="checkbox" id="edit-episode-tagalog-dub">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="edit-episode-modal">Cancel</button>
+                <button class="btn btn-primary" id="submit-edit-episode">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Schedule Modal -->
+    <div id="edit-schedule-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Scheduled Release</h3>
+                <span class="modal-close" data-modal="edit-schedule-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-schedule-id">
+                
+                <div class="form-group">
+                    <label for="edit-release-date">Release Date</label>
+                    <input type="date" id="edit-release-date" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-schedule-notes">Notes (Optional)</label>
+                    <textarea id="edit-schedule-notes" class="form-control" placeholder="Enter notes about this release..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-schedule-tagalog-dub">Has Tagalog Dub?</label>
+                    <label class="switch">
+                        <input type="checkbox" id="edit-schedule-tagalog-dub">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="edit-schedule-modal">Cancel</button>
+                <button class="btn btn-primary" id="submit-edit-schedule">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Deletion</h3>
+                <span class="modal-close" data-modal="delete-confirm-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="delete-item-id">
+                <input type="hidden" id="delete-item-type">
+                
+                <p>Are you sure you want to delete this item?</p>
+                <p id="delete-item-details"></p>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <p>This action cannot be undone.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="delete-confirm-modal">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading hidden">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Keepalive hidden iframe -->
+    <iframe src="/keepalive" class="keepalive-frame" title="keepalive"></iframe>
+    
+    <!-- Load JavaScript -->
+    <script src="/js/persistence.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize persistence manager
+            const persistenceManager = new AnimePersistenceManager('');
+            persistenceManager.createBackupUI('backup-container');
+            persistenceManager.startKeepAlive();
+            
+            // Initialize admin panel
+            initAdminPanel();
+            
+            // Load initial data
+            loadDashboardData();
+            
+            // Setup navigation
+            setupNavigation();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Setup modals
+            setupModals();
+        });
+        
+        // Initialize admin panel
+        function initAdminPanel() {
+            // Set current date in release date inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('release-date').value = today;
+            
+            // Check for server data on page load
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.dataStats.customAnimeCount === 0 && 
+                        data.dataStats.episodesCount === 0 &&
+                        persistenceManager.hasLocalBackup()) {
+                        
+                        if (confirm('The server appears to have no data, but a local backup was found. Would you like to restore it?')) {
+                            persistenceManager.sendBackupToServer()
+                                .then(result => {
+                                    if (result) {
+                                        alert('Data successfully restored from local backup!');
+                                        window.location.reload();
+                                    }
+                                });
+                        }
+                    }
+                })
+                .catch(error => console.error('Error checking server health:', error));
+        }
+        
+        // Setup navigation
+        function setupNavigation() {
+            // Navigation menu
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    document.querySelectorAll('.nav-link').forEach(l => {
+                        l.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Hide all content sections
+                    document.querySelectorAll('.content-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    
+                    // Show corresponding content section
+                    const targetId = this.getAttribute('data-target');
+                    document.getElementById(targetId).classList.add('active');
+                    
+                    // Load section data if needed
+                    if (targetId === 'anime-manager') {
+                        loadAnimeList();
+                    } else if (targetId === 'episode-manager') {
+                        loadEpisodeList();
+                        populateAnimeDropdowns();
+                    } else if (targetId === 'scheduled-releases') {
+                        loadScheduledReleases();
+                        populateAnimeDropdowns();
+                    } else if (targetId === 'bulk-import') {
+                        populateAnimeDropdowns();
+                    } else if (targetId === 'server-settings') {
+                        checkServerHealth();
+                    }
+                });
+            });
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Quick action buttons
+            document.getElementById('add-anime-btn').addEventListener('click', function() {
+                document.getElementById('add-anime-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('add-anime-btn2').addEventListener('click', function() {
+                document.getElementById('add-anime-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('add-episode-btn').addEventListener('click', function() {
+                populateAnimeDropdowns();
+                document.getElementById('add-episode-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('add-episode-btn2').addEventListener('click', function() {
+                populateAnimeDropdowns();
+                document.getElementById('add-episode-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('schedule-btn').addEventListener('click', function() {
+                populateAnimeDropdowns();
+                document.getElementById('schedule-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('add-schedule-btn').addEventListener('click', function() {
+                populateAnimeDropdowns();
+                document.getElementById('schedule-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('bulk-import-btn').addEventListener('click', function() {
+                document.querySelector('.nav-link[data-target="bulk-import"]').click();
+            });
+            
+            // Search AniList button
+            document.getElementById('search-anilist-btn').addEventListener('click', function() {
+                const searchQuery = document.getElementById('anime-search-input').value.trim();
+                if (searchQuery.length === 0) return;
+                
+                searchAniList(searchQuery);
+            });
+            
+            // Submit add anime
+            document.getElementById('submit-add-anime').addEventListener('click', function() {
+                const anilistId = document.getElementById('anilist-id').value.trim();
+                const hasTagalogDub = document.getElementById('has-tagalog-dub').checked;
+                
+                if (anilistId.length === 0) {
+                    alert('Please enter an AniList ID');
+                    return;
+                }
+                
+                addAnime(anilistId, hasTagalogDub);
+            });
+            
+            // Submit add episode
+            document.getElementById('submit-add-episode').addEventListener('click', function() {
+                const animeId = document.getElementById('episode-anime').value;
+                const episodeNumber = document.getElementById('episode-number').value;
+                const episodeTitle = document.getElementById('episode-title').value.trim();
+                const iframeSrc = document.getElementById('iframe-src').value.trim();
+                const server2Url = document.getElementById('server2-url').value.trim();
+                const hasTagalogDub = document.getElementById('episode-tagalog-dub').checked;
+                
+                if (animeId.length === 0) {
+                    alert('Please select an anime');
+                    return;
+                }
+                
+                if (episodeNumber.length === 0) {
+                    alert('Please enter an episode number');
+                    return;
+                }
+                
+                if (iframeSrc.length === 0 && server2Url.length === 0) {
+                    alert('Please enter at least one video source');
+                    return;
+                }
+                
+                addEpisode(animeId, episodeNumber, episodeTitle, iframeSrc, server2Url, hasTagalogDub);
+            });
+            
+            // Submit schedule
+            document.getElementById('submit-schedule').addEventListener('click', function() {
+                const animeId = document.getElementById('schedule-anime').value;
+                const releaseDate = document.getElementById('release-date').value;
+                const notes = document.getElementById('schedule-notes').value.trim();
+                const hasTagalogDub = document.getElementById('schedule-tagalog-dub').checked;
+                
+                if (animeId.length === 0) {
+                    alert('Please select an anime');
+                    return;
+                }
+                
+                if (releaseDate.length === 0) {
+                    alert('Please select a release date');
+                    return;
+                }
+                
+                scheduleRelease(animeId, releaseDate, notes, hasTagalogDub);
+            });
+            
+            // Submit edit episode
+            document.getElementById('submit-edit-episode').addEventListener('click', function() {
+                const episodeId = document.getElementById('edit-episode-id').value;
+                const episodeNumber = document.getElementById('edit-episode-number').value;
+                const episodeTitle = document.getElementById('edit-episode-title').value.trim();
+                const iframeSrc = document.getElementById('edit-iframe-src').value.trim();
+                const server2Url = document.getElementById('edit-server2-url').value.trim();
+                const hasTagalogDub = document.getElementById('edit-episode-tagalog-dub').checked;
+                
+                if (episodeNumber.length === 0) {
+                    alert('Please enter an episode number');
+                    return;
+                }
+                
+                if (iframeSrc.length === 0 && server2Url.length === 0) {
+                    alert('Please enter at least one video source');
+                    return;
+                }
+                
+                updateEpisode(episodeId, episodeNumber, episodeTitle, iframeSrc, server2Url, hasTagalogDub);
+            });
+            
+            // Submit edit schedule
+            document.getElementById('submit-edit-schedule').addEventListener('click', function() {
+                const scheduleId = document.getElementById('edit-schedule-id').value;
+                const releaseDate = document.getElementById('edit-release-date').value;
+                const notes = document.getElementById('edit-schedule-notes').value.trim();
+                const hasTagalogDub = document.getElementById('edit-schedule-tagalog-dub').checked;
+                
+                if (releaseDate.length === 0) {
+                    alert('Please select a release date');
+                    return;
+                }
+                
+                updateSchedule(scheduleId, releaseDate, notes, hasTagalogDub);
+            });
+            
+            // Confirm delete
+            document.getElementById('confirm-delete').addEventListener('click', function() {
+                const itemId = document.getElementById('delete-item-id').value;
+                const itemType = document.getElementById('delete-item-type').value;
+                
+                if (itemType === 'anime') {
+                    deleteAnime(itemId);
+                } else if (itemType === 'episode') {
+                    deleteEpisode(itemId);
+                } else if (itemType === 'schedule') {
+                    deleteSchedule(itemId);
+                }
+            });
+            
+            // Parse HTML button
+            document.getElementById('parse-html-btn').addEventListener('click', function() {
+                const animeId = document.getElementById('select-anime').value;
+                const hasTagalogDub = document.getElementById('tagalog-dub-toggle').checked;
+                const htmlInput = document.getElementById('html-input').value.trim();
+                
+                if (animeId.length === 0) {
+                    alert('Please select an anime');
+                    return;
+                }
+                
+                if (htmlInput.length === 0) {
+                    alert('Please paste HTML code');
+                    return;
+                }
+                
+                parseEpisodesFromHTML(animeId, hasTagalogDub, htmlInput);
+            });
+            
+            // Import episodes button
+            document.getElementById('import-episodes-btn').addEventListener('click', function() {
+                importEpisodes();
+            });
+            
+            // Cancel import button
+            document.getElementById('cancel-import-btn').addEventListener('click', function() {
+                document.getElementById('preview-section').classList.add('hidden');
+                document.getElementById('episode-preview-list').innerHTML = '';
+            });
+            
+            // Import JSON button
+            document.getElementById('import-json-btn').addEventListener('click', function() {
+                const fileInput = document.getElementById('json-file');
+                
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    alert('Please select a JSON file');
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+                    alert('Please select a JSON file');
+                    return;
+                }
+                
+                if (confirm('Importing this file will replace all existing data. Are you sure you want to continue?')) {
+                    importJSONBackup(file);
+                }
+            });
+            
+            // Create backup button
+            document.getElementById('create-backup-btn').addEventListener('click', function() {
+                // Use persistence manager to download backup
+                persistenceManager.downloadBackup();
+            });
+            
+            // Manual backup button
+            document.getElementById('manual-backup-btn').addEventListener('click', function() {
+                persistenceManager.performBackup().then(success => {
+                    if (success) {
+                        alert('Backup successful!');
+                    } else {
+                        alert('Backup failed!');
+                    }
+                });
+            });
+            
+            // Auto-backup interval change
+            document.getElementById('auto-backup-interval').addEventListener('change', function() {
+                const interval = parseInt(this.value);
+                persistenceManager.backupIntervalMinutes = interval;
+                alert(`Auto-backup interval changed to ${interval} minutes`);
+            });
+            
+            // Check health button
+            document.getElementById('check-health-btn').addEventListener('click', function() {
+                checkServerHealth();
+            });
+            
+            // Clear cache button
+            document.getElementById('clear-cache-btn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear the cache?')) {
+                    // Send request to clear cache
+                    showLoading();
+                    fetch('/api/cache/clear', {
+                        method: 'POST'
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            hideLoading();
+                            alert('Cache cleared successfully!');
+                            checkServerHealth();
+                        })
+                        .catch(error => {
+                            hideLoading();
+                            console.error('Error clearing cache:', error);
+                            alert('Failed to clear cache: ' + error.message);
+                        });
+                }
+            });
+        }
+        
+        // Setup modals
+        function setupModals() {
+            // Close modal buttons
+            document.querySelectorAll('.modal-close, .modal-backdrop .btn-secondary').forEach(button => {
+                button.addEventListener('click', function() {
+                    const modalId = this.getAttribute('data-modal');
+                    document.getElementById(modalId).classList.add('hidden');
+                });
+            });
+        }
+        
+        // Load dashboard data
+        function loadDashboardData() {
+            showLoading();
+            
+            // Fetch all data simultaneously
+            Promise.all([
+                fetch('/api/anime').then(res => res.json()),
+                fetch('/api/episodes').then(res => res.json()),
+                fetch('/api/anime/tagalog').then(res => res.json()),
+                fetch('/api/upcoming').then(res => res.json()),
+                fetch('/health').then(res => res.json())
+            ])
+                .then(([animeList, episodes, tagalogAnime, upcoming, health]) => {
+                    // Update dashboard stats
+                    document.getElementById('anime-count').textContent = animeList.length;
+                    document.getElementById('episodes-count').textContent = episodes.length;
+                    document.getElementById('tagalog-count').textContent = tagalogAnime.length;
+                    document.getElementById('upcoming-count').textContent = upcoming.length;
+                    
+                    // Update server stats
+                    document.getElementById('cache-size').textContent = health.dataStats.cacheSize;
+                    
+                    // Calculate uptime (approx)
+                    const lastSync = health.dataStats.lastSync ? new Date(health.dataStats.lastSync) : null;
+                    document.getElementById('last-sync').textContent = lastSync ? formatTime(lastSync) : 'N/A';
+                    
+                    // Display recent activity
+                    displayRecentActivity(episodes);
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading dashboard data:', error);
+                    hideLoading();
+                    alert('Failed to load dashboard data: ' + error.message);
+                });
+        }
+        
+        // Display recent activity
+        function displayRecentActivity(episodes) {
+            const recentActivity = document.getElementById('recent-activity');
+            
+            if (!episodes || episodes.length === 0) {
+                recentActivity.innerHTML = `<tr><td colspan="3" class="text-center">No recent activity</td></tr>`;
+                return;
+            }
+            
+            // Sort by date added (newest first)
+            const sortedEpisodes = [...episodes]
+                .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
+                .slice(0, 5); // Show only 5 most recent
+            
+            // Map of anime IDs to titles (to avoid multiple fetches)
+            const animeMap = new Map();
+            
+            // Process episodes and fetch anime details
+            Promise.all(sortedEpisodes.map(episode => 
+                fetch(`/api/anime/${episode.animeId}`)
+                    .then(response => response.json())
+                    .then(anime => {
+                        animeMap.set(anime.id, anime.title);
+                        return {
+                            ...episode,
+                            animeTitle: anime.title
+                        };
+                    })
+            ))
+                .then(episodesWithTitles => {
+                    // Create HTML for activity list
+                    recentActivity.innerHTML = episodesWithTitles.map(episode => `
+                        <tr>
+                            <td>${episode.animeTitle}</td>
+                            <td>Added Episode ${episode.number}</td>
+                            <td>${formatDate(new Date(episode.dateAdded))}</td>
+                        </tr>
+                    `).join('');
+                })
+                .catch(error => {
+                    console.error('Error fetching anime details:', error);
+                    recentActivity.innerHTML = `<tr><td colspan="3" class="text-center">Error loading activity</td></tr>`;
+                });
+        }
+        
+        // Load anime list
+        function loadAnimeList() {
+            showLoading();
+            
+            fetch('/api/anime')
+                .then(response => response.json())
+                .then(animeList => {
+                    const animeListElement = document.getElementById('anime-list');
+                    
+                    if (animeList.length === 0) {
+                        animeListElement.innerHTML = `<tr><td colspan="5" class="text-center">No anime found</td></tr>`;
+                        hideLoading();
+                        return;
+                    }
+                    
+                    // Fetch episodes count for each anime
+                    Promise.all(animeList.map(anime => 
+                        fetch(`/api/anime/${anime.id}/episodes`)
+                            .then(response => response.json())
+                            .then(episodes => ({
+                                ...anime,
+                                episodeCount: episodes.length
+                            }))
+                    ))
+                        .then(animeWithEpisodes => {
+                            // Create HTML for anime list
+                            animeListElement.innerHTML = animeWithEpisodes.map(anime => `
+                                <tr>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 1rem;">
+                                            <img src="${anime.thumbnail}" alt="${anime.title}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                            <div>
+                                                <div style="font-weight: 500;">${anime.title}</div>
+                                                <div style="font-size: 0.8rem; color: #777;">${anime.titleRomaji || ''}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${anime.episodeCount}</td>
+                                    <td>
+                                        <span class="badge ${anime.hasTagalogDub ? 'badge-success' : 'badge-secondary'}">
+                                            ${anime.hasTagalogDub ? 'Yes' : 'No'}
+                                        </span>
+                                    </td>
+                                    <td>${formatDate(new Date(anime.dateAdded))}</td>
+                                    <td>
+                                        <div class="actions">
+                                            <a href="#" class="btn-icon btn-primary" title="View Episodes" data-anime-id="${anime.id}">
+                                                <i class="fas fa-list"></i>
+                                            </a>
+                                            <a href="#" class="btn-icon btn-info" title="Toggle Tagalog Dub" data-anime-id="${anime.id}" data-tagalog="${anime.hasTagalogDub}">
+                                                <i class="fas fa-language"></i>
+                                            </a>
+                                            <a href="#" class="btn-icon btn-danger" title="Delete Anime" data-delete="anime" data-id="${anime.id}" data-title="${anime.title}">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('');
+                            
+                            // Add event listeners to action buttons
+                            addActionListeners();
+                            
+                            hideLoading();
+                        })
+                        .catch(error => {
+                            console.error('Error fetching episode counts:', error);
+                            hideLoading();
+                            alert('Failed to load episode counts: ' + error.message);
+                        });
+                })
+                .catch(error => {
+                    console.error('Error loading anime list:', error);
+                    hideLoading();
+                    alert('Failed to load anime list: ' + error.message);
+                });
+        }
+        
+        // Load episode list
+        function loadEpisodeList() {
+            showLoading();
+            
+            fetch('/api/episodes')
+                .then(response => response.json())
+                .then(episodes => {
+                    const episodeList = document.getElementById('episode-list');
+                    
+                    if (episodes.length === 0) {
+                        episodeList.innerHTML = `<tr><td colspan="5" class="text-center">No episodes found</td></tr>`;
+                        hideLoading();
+                        return;
+                    }
+                    
+                    // Sort by date added (newest first)
+                    const sortedEpisodes = [...episodes].sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+                    
+                    // Map of anime IDs to titles (to avoid multiple fetches)
+                    const animeMap = new Map();
+                    
+                    // Process episodes and fetch anime details
+                    Promise.all(sortedEpisodes.map(episode => 
+                        fetch(`/api/anime/${episode.animeId}`)
+                            .then(response => response.json())
+                            .then(anime => {
+                                animeMap.set(anime.id, anime.title);
+                                return {
+                                    ...episode,
+                                    animeTitle: anime.title
+                                };
+                            })
+                    ))
+                        .then(episodesWithTitles => {
+                            // Create HTML for episode list
+                            episodeList.innerHTML = episodesWithTitles.map(episode => `
+                                <tr>
+                                    <td>${episode.animeTitle}</td>
+                                    <td>Episode ${episode.number} ${episode.title ? `- ${episode.title}` : ''}</td>
+                                    <td>
+                                        <span class="badge ${episode.hasTagalogDub ? 'badge-success' : 'badge-secondary'}">
+                                            ${episode.hasTagalogDub ? 'Yes' : 'No'}
+                                        </span>
+                                    </td>
+                                    <td>${formatDate(new Date(episode.dateAdded))}</td>
+                                    <td>
+                                        <div class="actions">
+                                            <a href="#" class="btn-icon btn-primary" title="Edit Episode" data-edit="episode" data-id="${episode.id}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="#" class="btn-icon btn-danger" title="Delete Episode" data-delete="episode" data-id="${episode.id}" data-anime="${episode.animeTitle}" data-number="${episode.number}">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('');
+                            
+                            // Add event listeners to action buttons
+                            addActionListeners();
+                            
+                            hideLoading();
+                        })
+                        .catch(error => {
+                            console.error('Error fetching anime details:', error);
+                            hideLoading();
+                            alert('Failed to load anime details: ' + error.message);
+                        });
+                })
+                .catch(error => {
+                    console.error('Error loading episode list:', error);
+                    hideLoading();
+                    alert('Failed to load episode list: ' + error.message);
+                });
+        }
+        
+        // Load scheduled releases
+        function loadScheduledReleases() {
+            showLoading();
+            
+            fetch('/api/scheduled')
+                .then(response => response.json())
+                .then(scheduled => {
+                    const scheduledList = document.getElementById('scheduled-list');
+                    
+                    if (scheduled.length === 0) {
+                        scheduledList.innerHTML = `<tr><td colspan="5" class="text-center">No scheduled releases found</td></tr>`;
+                        hideLoading();
+                        return;
+                    }
+                    
+                    // Create HTML for scheduled releases
+                    scheduledList.innerHTML = scheduled.map(release => `
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <img src="${release.thumbnail}" alt="${release.title}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                    <div>${release.title}</div>
+                                </div>
+                            </td>
+                            <td>${formatDate(new Date(release.releaseDate))}</td>
+                            <td>
+                                <span class="badge ${release.hasTagalogDub ? 'badge-success' : 'badge-secondary'}">
+                                    ${release.hasTagalogDub ? 'Yes' : 'No'}
+                                </span>
+                            </td>
+                            <td>${release.notes || 'N/A'}</td>
+                            <td>
+                                <div class="actions">
+                                    <a href="#" class="btn-icon btn-primary" title="Edit Release" data-edit="schedule" data-id="${release.id}">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="#" class="btn-icon btn-danger" title="Delete Release" data-delete="schedule" data-id="${release.id}" data-title="${release.title}">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                    
+                    // Add event listeners to action buttons
+                    addActionListeners();
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading scheduled releases:', error);
+                    hideLoading();
+                    alert('Failed to load scheduled releases: ' + error.message);
+                });
+        }
+        
+        // Add action listeners
+        function addActionListeners() {
+            // Delete buttons
+            document.querySelectorAll('[data-delete]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const type = this.getAttribute('data-delete');
+                    const id = this.getAttribute('data-id');
+                    
+                    // Prepare text for confirmation
+                    let detailsText = '';
+                    if (type === 'anime') {
+                        const title = this.getAttribute('data-title');
+                        detailsText = `Anime: ${title}`;
+                    } else if (type === 'episode') {
+                        const anime = this.getAttribute('data-anime');
+                        const number = this.getAttribute('data-number');
+                        detailsText = `${anime} - Episode ${number}`;
+                    } else if (type === 'schedule') {
+                        const title = this.getAttribute('data-title');
+                        detailsText = `Scheduled release: ${title}`;
+                    }
+                    
+                    // Set values for delete confirmation
+                    document.getElementById('delete-item-id').value = id;
+                    document.getElementById('delete-item-type').value = type;
+                    document.getElementById('delete-item-details').textContent = detailsText;
+                    
+                    // Show delete confirmation modal
+                    document.getElementById('delete-confirm-modal').classList.remove('hidden');
+                });
+            });
+            
+            // Edit episode buttons
+            document.querySelectorAll('[data-edit="episode"]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const episodeId = this.getAttribute('data-id');
+                    showLoading();
+                    
+                    fetch(`/api/episodes/${episodeId}`)
+                        .then(response => response.json())
+                        .then(episode => {
+                            // Fill form fields
+                            document.getElementById('edit-episode-id').value = episode.id;
+                            document.getElementById('edit-episode-number').value = episode.number;
+                            document.getElementById('edit-episode-title').value = episode.title || '';
+                            document.getElementById('edit-iframe-src').value = episode.iframeSrc || '';
+                            document.getElementById('edit-server2-url').value = episode.server2Url || '';
+                            document.getElementById('edit-episode-tagalog-dub').checked = episode.hasTagalogDub;
+                            
+                            // Show edit modal
+                            document.getElementById('edit-episode-modal').classList.remove('hidden');
+                            hideLoading();
+                        })
+                        .catch(error => {
+                            console.error('Error fetching episode details:', error);
+                            hideLoading();
+                            alert('Failed to fetch episode details: ' + error.message);
+                        });
+                });
+            });
+            
+            // Edit schedule buttons
+            document.querySelectorAll('[data-edit="schedule"]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const scheduleId = this.getAttribute('data-id');
+                    showLoading();
+                    
+                    fetch(`/api/scheduled/${scheduleId}`)
+                        .then(response => response.json())
+                        .then(schedule => {
+                            // Fill form fields
+                            document.getElementById('edit-schedule-id').value = schedule.id;
+                            document.getElementById('edit-release-date').value = new Date(schedule.releaseDate).toISOString().split('T')[0];
+                            document.getElementById('edit-schedule-notes').value = schedule.notes || '';
+                            document.getElementById('edit-schedule-tagalog-dub').checked = schedule.hasTagalogDub;
+                            
+                            // Show edit modal
+                            document.getElementById('edit-schedule-modal').classList.remove('hidden');
+                            hideLoading();
+                        })
+                        .catch(error => {
+                            console.error('Error fetching schedule details:', error);
+                            hideLoading();
+                            alert('Failed to fetch schedule details: ' + error.message);
+                        });
+                });
+            });
+            
+            // Toggle Tagalog Dub buttons
+            document.querySelectorAll('[data-tagalog]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const animeId = this.getAttribute('data-anime-id');
+                    const currentStatus = this.getAttribute('data-tagalog') === 'true';
+                    
+                    toggleTagalogDub(animeId, !currentStatus);
+                });
+            });
+        }
+        
+        // Populate anime dropdowns
+        function populateAnimeDropdowns() {
+            fetch('/api/anime')
+                .then(response => response.json())
+                .then(animeList => {
+                    // Sort alphabetically by title
+                    const sortedAnime = [...animeList].sort((a, b) => a.title.localeCompare(b.title));
+                    
+                    // Create options HTML
+                    const optionsHTML = sortedAnime.map(anime => 
+                        `<option value="${anime.id}">${anime.title}</option>`
+                    ).join('');
+                    
+                    // Update all anime select elements
+                    document.querySelectorAll('#episode-anime, #schedule-anime, #select-anime, #episode-anime-filter').forEach(select => {
+                        // Preserve current selection if possible
+                        const currentValue = select.value;
+                        
+                        // Add default option for filter
+                        if (select.id === 'episode-anime-filter') {
+                            select.innerHTML = `<option value="all">All Anime</option>${optionsHTML}`;
+                        } else {
+                            // Empty option for required selects
+                            select.innerHTML = `<option value="">-- Select an anime --</option>${optionsHTML}`;
+                        }
+                        
+                        // Restore selection if it exists
+                        if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+                            select.value = currentValue;
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading anime list for dropdowns:', error);
+                });
+        }
+        
+        // Search AniList
+        function searchAniList(query) {
+            showLoading();
+            
+            fetch(`/api/search?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(results => {
+                    const searchResults = document.getElementById('search-results');
+                    const searchResultsList = document.getElementById('search-results-list');
+                    
+                    if (results.length === 0) {
+                        searchResultsList.innerHTML = `<p class="text-center">No results found</p>`;
+                    } else {
+                        searchResultsList.innerHTML = results.map(anime => `
+                            <div style="display: flex; gap: 1rem; padding: 0.8rem; border-bottom: 1px solid #eee;">
+                                <img src="${anime.thumbnail}" alt="${anime.title}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 5px;">
+                                <div>
+                                    <div style="font-weight: 500;">${anime.title}</div>
+                                    <div style="font-size: 0.8rem; color: #777;">${anime.titleRomaji || ''}</div>
+                                    <div style="font-size: 0.8rem; margin-top: 0.5rem;">
+                                        <span class="badge badge-info">${anime.episodes !== "Unknown" ? anime.episodes + ' episodes' : 'Unknown episodes'}</span>
+                                        <span class="badge badge-primary">${anime.status}</span>
+                                    </div>
+                                    <div style="margin-top: 0.5rem;">
+                                        <button class="btn btn-sm btn-primary select-anime-btn" data-id="${anime.id}">Select</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        // Add event listeners to select buttons
+                        document.querySelectorAll('.select-anime-btn').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const id = this.getAttribute('data-id');
+                                document.getElementById('anilist-id').value = id;
+                                searchResults.classList.add('hidden');
+                            });
+                        });
+                    }
+                    
+                    searchResults.classList.remove('hidden');
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error searching AniList:', error);
+                    hideLoading();
+                    alert('Failed to search AniList: ' + error.message);
+                });
+        }
+        
+        // Add anime
+        function addAnime(anilistId, hasTagalogDub) {
+            showLoading();
+            
+            fetch('/api/anime', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    anilistId,
+                    hasTagalogDub
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to add anime');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(anime => {
+                    // Close modal
+                    document.getElementById('add-anime-modal').classList.add('hidden');
+                    
+                    // Reset form
+                    document.getElementById('anilist-id').value = '';
+                    document.getElementById('anime-search-input').value = '';
+                    document.getElementById('has-tagalog-dub').checked = false;
+                    document.getElementById('search-results').classList.add('hidden');
+                    
+                    // Reload anime list if visible
+                    if (document.getElementById('anime-manager').classList.contains('active')) {
+                        loadAnimeList();
+                    }
+                    
+                    // Update dashboard counts
+                    loadDashboardData();
+                    
+                    // Show success message
+                    alert(`Anime "${anime.title}" added successfully!`);
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error adding anime:', error);
+                    hideLoading();
+                    alert('Failed to add anime: ' + error.message);
+                });
+        }
+        
+        // Add episode
+        function addEpisode(animeId, number, title, iframeSrc, server2Url, hasTagalogDub) {
+            showLoading();
+            
+            fetch('/api/episodes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    animeId,
+                    number: parseInt(number),
+                    title,
+                    iframeSrc,
+                    server2Url,
+                    hasTagalogDub
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to add episode');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(episode => {
+                    // Close modal
+                    document.getElementById('add-episode-modal').classList.add('hidden');
+                    
+                    // Reset form
+                    document.getElementById('episode-anime').value = '';
+                    document.getElementById('episode-number').value = '';
+                    document.getElementById('episode-title').value = '';
+                    document.getElementById('iframe-src').value = '';
+                    document.getElementById('server2-url').value = '';
+                    document.getElementById('episode-tagalog-dub').checked = false;
+                    
+                    // Reload episode list if visible
+                    if (document.getElementById('episode-manager').classList.contains('active')) {
+                        loadEpisodeList();
+                    }
+                    
+                    // Update dashboard counts
+                    loadDashboardData();
+                    
+                    // Show success message
+                    alert(`Episode ${episode.number} added successfully!`);
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error adding episode:', error);
+                    hideLoading();
+                    alert('Failed to add episode: ' + error.message);
+                });
+        }
+        
+        // Schedule release
+        function scheduleRelease(animeId, releaseDate, notes, hasTagalogDub) {
+            showLoading();
+            
+            fetch('/api/scheduled', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    anilistId: animeId,
+                    releaseDate,
+                    notes,
+                    hasTagalogDub
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to schedule release');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(schedule => {
+                    // Close modal
+                    document.getElementById('schedule-modal').classList.add('hidden');
+                    
+                    // Reset form
+                    document.getElementById('schedule-anime').value = '';
+                    document.getElementById('schedule-notes').value = '';
+                    document.getElementById('schedule-tagalog-dub').checked = false;
+                    
+                    // Set today's date
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('release-date').value = today;
+                    
+                    // Reload scheduled releases if visible
+                    if (document.getElementById('scheduled-releases').classList.contains('active')) {
+                        loadScheduledReleases();
+                    }
+                    
+                    // Update dashboard counts
+                    loadDashboardData();
+                    
+                    // Show success message
+                    alert(`Release for "${schedule.title}" scheduled successfully!`);
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error scheduling release:', error);
+                    hideLoading();
+                    alert('Failed to schedule release: ' + error.message);
+                });
+        }
+        
+        // Update episode
+        function updateEpisode(episodeId, number, title, iframeSrc, server2Url, hasTagalogDub) {
+            showLoading();
+            
+            fetch(`/api/episodes/${episodeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    number: parseInt(number),
+                    title,
+                    iframeSrc,
+                    server2Url,
+                    hasTagalogDub
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to update episode');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(episode => {
+                    // Close modal
+                    document.getElementById('edit-episode-modal').classList.add('hidden');
+                    
+                    // Reload episode list
+                    loadEpisodeList();
+                    
+                    // Show success message
+                    alert(`Episode ${episode.number} updated successfully!`);
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error updating episode:', error);
+                    hideLoading();
+                    alert('Failed to update episode: ' + error.message);
+                });
+        }
+        
+        // Update schedule
+        function updateSchedule(scheduleId, releaseDate, notes, hasTagalogDub) {
+            showLoading();
+            
+            fetch(`/api/scheduled/${scheduleId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    releaseDate,
+                    notes,
+                    hasTagalogDub
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to update scheduled release');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(schedule => {
+                    // Close modal
+                    document.getElementById('edit-schedule-modal').classList.add('hidden');
+                    
+                    // Reload scheduled releases
+                    loadScheduledReleases();
+                    
+                    // Show success message
+                    alert('Scheduled release updated successfully!');
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error updating scheduled release:', error);
+                    hideLoading();
+                    alert('Failed to update scheduled release: ' + error.message);
+                });
+        }
+        
+        // Delete anime
+        function deleteAnime(animeId) {
+            showLoading();
+            
+            fetch(`/api/anime/${animeId}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to delete anime');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    // Close modal
+                    document.getElementById('delete-confirm-modal').classList.add('hidden');
+                    
+                    // Reload anime list if visible
+                    if (document.getElementById('anime-manager').classList.contains('active')) {
+                        loadAnimeList();
+                    }
+                    
+                    // Update dashboard counts
+                    loadDashboardData();
+                    
+                    // Show success message
+                    alert('Anime deleted successfully!');
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error deleting anime:', error);
+                    hideLoading();
+                    alert('Failed to delete anime: ' + error.message);
+                });
+        }
+        
+        // Delete episode
+        function deleteEpisode(episodeId) {
+            showLoading();
+            
+            fetch(`/api/episodes/${episodeId}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to delete episode');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    // Close modal
+                    document.getElementById('delete-confirm-modal').classList.add('hidden');
+                    
+                    // Reload episode list if visible
+                    if (document.getElementById('episode-manager').classList.contains('active')) {
+                        loadEpisodeList();
+                    }
+                    
+                    // Update dashboard counts
+                    loadDashboardData();
+                    
+                    // Show success message
+                    alert('Episode deleted successfully!');
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error deleting episode:', error);
+                    hideLoading();
+                    alert('Failed to delete episode: ' + error.message);
+                });
+        }
+        
+        // Delete schedule
+        function deleteSchedule(scheduleId) {
+            showLoading();
+            
+            fetch(`/api/scheduled/${scheduleId}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to delete scheduled release');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    // Close modal
+                    document.getElementById('delete-confirm-modal').classList.add('hidden');
+                    
+                    // Reload scheduled releases if visible
+                    if (document.getElementById('scheduled-releases').classList.contains('active')) {
+                        loadScheduledReleases();
+                    }
+                    
+                    // Update dashboard counts
+                    loadDashboardData();
+                    
+                    // Show success message
+                    alert('Scheduled release deleted successfully!');
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error deleting scheduled release:', error);
+                    hideLoading();
+                    alert('Failed to delete scheduled release: ' + error.message);
+                });
+        }
+        
+        // Toggle Tagalog dub
+        function toggleTagalogDub(animeId, hasTagalogDub) {
+            showLoading();
+            
+            fetch(`/api/anime/${animeId}/tagalog`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    hasTagalogDub
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(error => {
+                            throw new Error(error.error || 'Failed to update Tagalog dub status');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    // Reload anime list if visible
+                    if (document.getElementById('anime-manager').classList.contains('active')) {
+                        loadAnimeList();
+                    }
+                    
+                    // Show success message
+                    alert(`Tagalog dub status ${hasTagalogDub ? 'enabled' : 'disabled'} successfully!`);
+                    
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error updating Tagalog dub status:', error);
+                    hideLoading();
+                    alert('Failed to update Tagalog dub status: ' + error.message);
+                });
+        }
+        
+        // Parse episodes from HTML
+        function parseEpisodesFromHTML(animeId, hasTagalogDub, htmlInput) {
+            showLoading();
+            
+            try {
+                // Create temporary element to parse HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlInput;
+                
+                // Find select element and options
+                const select = tempDiv.querySelector('select');
+                
+                if (!select) {
+                    throw new Error('No select element found in the HTML');
+                }
+                
+                const options = select.querySelectorAll('option');
+                
+                if (options.length === 0) {
+                    throw new Error('No episode options found in the select element');
+                }
+                
+                // Parse episodes
+                const episodes = [];
+                
+                options.forEach(option => {
+                    const episodeNumber = parseInt(option.value);
+                    const title = option.textContent.trim();
+                    const server1 = option.getAttribute('data-server1') || '';
+                    const server2 = option.getAttribute('data-server2') || '';
+                    
+                    if (!isNaN(episodeNumber)) {
+                        episodes.push({
+                            number: episodeNumber,
+                            title,
+                            iframeSrc: server1,
+                            server2Url: server2,
+                            hasTagalogDub
+                        });
+                    }
+                });
+                
+                // Check if any episodes were found
+                if (episodes.length === 0) {
+                    throw new Error('No valid episodes found in the HTML');
+                }
+                
+                // Display preview
+                const previewList = document.getElementById('episode-preview-list');
+                previewList.innerHTML = episodes.map(episode => `
+                    <div class="episode-item">
+                        <span class="episode-item-title">Episode ${episode.number}: ${episode.title || 'Untitled'}</span>
+                        <span class="badge ${episode.hasTagalogDub ? 'badge-success' : 'badge-secondary'}">
+                            ${episode.hasTagalogDub ? 'Tagalog Dub' : 'Sub Only'}
+                        </span>
+                    </div>
+                `).join('');
+                
+                // Store episodes data for import
+                window.episodesToImport = {
+                    animeId,
+                    episodes
+                };
+                
+                // Show preview section
+                document.getElementById('preview-section').classList.remove('hidden');
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error parsing HTML:', error);
+                hideLoading();
+                alert('Failed to parse HTML: ' + error.message);
+            }
+        }
+        
+        // Import episodes
+        function importEpisodes() {
+            if (!window.episodesToImport) {
+                alert('No episodes to import');
+                return;
+            }
+            
+            const { animeId, episodes } = window.episodesToImport;
+            
+            if (episodes.length === 0) {
+                alert('No episodes to import');
+                return;
+            }
+            
+            showLoading();
+            
+            // Import episodes one by one
+            let importCount = 0;
+            let errorCount = 0;
+            
+            const importEpisode = (index) => {
+                if (index >= episodes.length) {
+                    // All episodes imported
+                    hideLoading();
+                    
+                    // Reset import UI
+                    document.getElementById('preview-section').classList.add('hidden');
+                    document.getElementById('episode-preview-list').innerHTML = '';
+                    document.getElementById('html-input').value = '';
+                    window.episodesToImport = null;
+                    
+                    // Show success message
+                    alert(`Import complete!\n${importCount} episodes imported\n${errorCount} errors`);
+                    
+                    // Reload episode list if visible
+                    if (document.getElementById('episode-manager').classList.contains('active')) {
+                        loadEpisodeList();
+                    }
+                    
+                    // Update dashboard counts
+                    loadDashboardData();
+                    
+                    return;
+                }
+                
+                const episode = episodes[index];
+                
+                // Add episode
+                fetch('/api/episodes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        animeId,
+                        number: episode.number,
+                        title: episode.title,
+                        iframeSrc: episode.iframeSrc,
+                        server2Url: episode.server2Url,
+                        hasTagalogDub: episode.hasTagalogDub
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(error => {
+                                throw new Error(error.error || 'Failed to add episode');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(result => {
+                        // Mark as imported
+                        importCount++;
+                        
+                        // Update progress in UI (optional)
+                        document.getElementById('episode-preview-list').children[index].classList.add('text-success');
+                        
+                        // Import next episode
+                        importEpisode(index + 1);
+                    })
+                    .catch(error => {
+                        console.error(`Error importing episode ${episode.number}:`, error);
+                        
+                        // Mark as error
+                        errorCount++;
+                        
+                        // Update progress in UI (optional)
+                        document.getElementById('episode-preview-list').children[index].classList.add('text-danger');
+                        
+                        // Continue with next episode
+                        importEpisode(index + 1);
+                    });
+            };
+            
+            // Start importing from first episode
+            importEpisode(0);
+        }
+        
+        // Import JSON backup
+        function importJSONBackup(file) {
+            showLoading();
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    
+                    // Verify backup structure
+                    if (!Array.isArray(backup.anime) || 
+                        !Array.isArray(backup.episodes) || 
+                        !Array.isArray(backup.scheduled)) {
+                        throw new Error('Invalid backup format');
+                    }
+                    
+                    // Import using API
+                    fetch('/api/import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(backup)
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(error => {
+                                    throw new Error(error.error || 'Failed to import backup');
+                                });
+                            }
+                            return response.json();
+                        })
+                        .then(result => {
+                            hideLoading();
+                            
+                            // Show success message
+                            alert(`Backup imported successfully!\nAnime: ${result.counts.anime}\nEpisodes: ${result.counts.episodes}\nScheduled: ${result.counts.scheduled}`);
+                            
+                            // Reset file input
+                            document.getElementById('json-file').value = '';
+                            
+                            // Reload dashboard
+                            loadDashboardData();
+                        })
+                        .catch(error => {
+                            console.error('Error importing backup:', error);
+                            hideLoading();
+                            alert('Failed to import backup: ' + error.message);
+                        });
+                } catch (error) {
+                    console.error('Error parsing backup file:', error);
+                    hideLoading();
+                    alert('Failed to parse backup file: ' + error.message);
+                }
+            };
+            
+            reader.onerror = function() {
+                hideLoading();
+                alert('Error reading file');
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Check server health
+        function checkServerHealth() {
+            fetch('/health')
+                .then(response => response.json())
+                .then(health => {
+                    // Update server stats
+                    document.getElementById('cache-size').textContent = health.dataStats.cacheSize;
+                    
+                    // Calculate uptime (approx)
+                    const lastSync = health.dataStats.lastSync ? new Date(health.dataStats.lastSync) : null;
+                    document.getElementById('last-sync').textContent = lastSync ? formatTime(lastSync) : 'N/A';
+                    
+                    // Get server uptime (simulated based on time since page load)
+                    const minutes = Math.floor((Date.now() - window.pageLoadTime) / 60000);
+                    document.getElementById('uptime').textContent = minutes;
+                })
+                .catch(error => {
+                    console.error('Error checking server health:', error);
+                    
+                    // Update server status to offline
+                    document.querySelector('.status-indicator').classList.remove('status-online');
+                    document.querySelector('.status-indicator').classList.add('status-offline');
+                    document.querySelector('.server-status span:last-child').textContent = 'Offline';
+                });
+        }
+        
+        // Utility Functions
+        
+        // Format date
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        // Format time
+        function formatTime(date) {
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Show loading spinner
+        function showLoading() {
+            document.getElementById('loading-spinner').classList.remove('hidden');
+        }
+        
+        // Hide loading spinner
+        function hideLoading() {
+            document.getElementById('loading-spinner').classList.add('hidden');
+        }
+        
+        // Store page load time for uptime calculation
+        window.pageLoadTime = Date.now();
+    </script>
+</body>
+</html>
