@@ -41,6 +41,10 @@
             --ring: 240 5.9% 10%;
             --radius: 0.5rem;
             
+            /* Special colors */
+            --soon: 263 92% 58%;
+            --soon-foreground: 0 0% 98%;
+            
             /* Shadows */
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
@@ -73,6 +77,10 @@
             --border: 240 3.7% 15.9%;
             --input: 240 3.7% 15.9%;
             --ring: 240 4.9% 83.9%;
+            
+            /* Special colors in dark mode */
+            --soon: 263 92% 58%;
+            --soon-foreground: 0 0% 98%;
         }
         
         * {
@@ -112,10 +120,11 @@
         .header {
             position: sticky;
             top: 0;
-            background-color: hsl(var(--background));
+            background-color: hsl(var(--background) / 0.8);
             border-bottom: 1px solid hsl(var(--border));
             height: var(--header-height);
             z-index: 50;
+            backdrop-filter: blur(10px);
         }
         
         .logo {
@@ -145,7 +154,7 @@
             color: hsl(var(--foreground));
             font-family: 'Outfit', sans-serif;
             font-size: 0.9rem;
-            transition: border-color var(--animation-duration) ease;
+            transition: border-color var(--animation-duration) ease, box-shadow var(--animation-duration) ease;
         }
         
         .search-input:focus {
@@ -202,6 +211,7 @@
             border-radius: var(--radius);
             overflow: hidden;
             margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
         }
         
         .hero-img {
@@ -267,6 +277,9 @@
         .section-title h2 {
             font-size: 1.5rem;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .section-title a {
@@ -274,6 +287,9 @@
             text-decoration: none;
             font-size: 0.9rem;
             transition: color var(--animation-duration) ease;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
         
         .section-title a:hover {
@@ -291,11 +307,12 @@
         @media (max-width: 768px) {
             .grid-scroll {
                 grid-template-columns: repeat(3, 1fr);
+                grid-auto-flow: column;
+                grid-auto-columns: 33%;
                 overflow-x: auto;
                 scroll-snap-type: x mandatory;
                 padding-bottom: 1rem;
-                grid-auto-flow: column;
-                grid-auto-columns: calc(33.3% - 1rem);
+                gap: 1rem;
                 scrollbar-width: none; /* Firefox */
             }
             
@@ -319,6 +336,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
+            cursor: pointer;
         }
         
         .anime-card:hover {
@@ -329,6 +347,7 @@
         .anime-card-thumb {
             position: relative;
             padding-top: 140%; /* Aspect ratio */
+            overflow: hidden;
         }
         
         .anime-card-img {
@@ -356,6 +375,12 @@
             font-size: 0.7rem;
             font-weight: 500;
             backdrop-filter: blur(4px);
+            z-index: 2;
+        }
+        
+        .anime-card-badge.tagalog {
+            background-color: hsla(var(--accent-foreground) / 0.9);
+            color: hsl(var(--accent));
         }
         
         .anime-card-content {
@@ -363,6 +388,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            border-top: 1px solid hsla(var(--border) / 0.5);
         }
         
         .anime-card-title {
@@ -387,6 +413,10 @@
             gap: 0.25rem;
         }
         
+        .anime-card-rating i {
+            color: #FFD700;
+        }
+        
         /* Button styles */
         .btn {
             display: inline-flex;
@@ -397,9 +427,18 @@
             font-size: 0.9rem;
             line-height: 1;
             padding: 0.75rem 1.5rem;
-            transition: background-color var(--animation-duration) ease, color var(--animation-duration) ease;
+            transition: background-color var(--animation-duration) ease, color var(--animation-duration) ease, transform var(--animation-duration) ease;
             cursor: pointer;
             text-decoration: none;
+            border: none;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
         }
         
         .btn-icon {
@@ -444,11 +483,26 @@
             box-shadow: var(--shadow-sm);
             padding: 1rem;
             transition: transform var(--animation-duration) ease, box-shadow var(--animation-duration) ease;
+            position: relative;
         }
         
         .upcoming-card:hover {
             transform: translateY(-3px);
             box-shadow: var(--shadow-md);
+        }
+        
+        .upcoming-soon {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: hsl(var(--soon));
+            color: hsl(var(--soon-foreground));
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
         
         .upcoming-thumb {
@@ -489,8 +543,12 @@
         }
         
         .upcoming-info {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
             font-size: 0.8rem;
             color: hsl(var(--muted-foreground));
+            margin-top: 0.25rem;
         }
         
         /* Footer */
@@ -550,6 +608,8 @@
             text-align: center;
             font-size: 0.8rem;
             color: hsl(var(--muted-foreground));
+            padding-top: 1.5rem;
+            border-top: 1px solid hsl(var(--border) / 0.5);
         }
         
         /* Admin panel lock */
@@ -671,6 +731,8 @@
             transition: transform var(--animation-duration) ease;
             z-index: 40;
             display: none;
+            box-shadow: var(--shadow-lg);
+            border-left: 1px solid hsl(var(--border));
         }
         
         .mobile-nav.show {
@@ -691,6 +753,8 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
         }
         
         .mobile-nav-link.active {
@@ -721,7 +785,7 @@
             }
             
             .hero-title {
-                font-size: 2rem;
+                font-size: 1.8rem;
             }
             
             .search-container {
@@ -732,6 +796,58 @@
                 margin-top: 1.5rem;
                 margin-bottom: 1.5rem;
             }
+            
+            .hero-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .hero-buttons .btn {
+                width: 100%;
+            }
+            
+            .section-title h2 {
+                font-size: 1.2rem;
+            }
+            
+            .section-title a {
+                font-size: 0.8rem;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .grid-scroll {
+                grid-template-columns: repeat(2, 1fr);
+                grid-auto-columns: 50%;
+            }
+            
+            .hero-title {
+                font-size: 1.5rem;
+            }
+            
+            .upcoming-card {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .upcoming-thumb {
+                width: 100%;
+                height: 120px;
+            }
+            
+            .upcoming-date {
+                margin: 0 auto 0.5rem;
+            }
+            
+            .upcoming-soon {
+                top: 1rem;
+                right: 1rem;
+            }
         }
         
         /* Loader */
@@ -739,7 +855,7 @@
             display: inline-block;
             width: 40px;
             height: 40px;
-            border: 3px solid hsl(var(--secondary));
+            border: 3px solid hsla(var(--foreground) / 0.1);
             border-radius: 50%;
             border-top-color: hsl(var(--primary));
             animation: spin 1s ease-in-out infinite;
@@ -870,7 +986,7 @@
         <!-- Popular Anime Section -->
         <section id="popular-section" class="mt-12">
             <div class="section-title">
-                <h2><i class="ph ph-star mr-2"></i>Popular Anime</h2>
+                <h2><i class="ph ph-star"></i>Popular Anime</h2>
                 <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
             </div>
             <div class="grid-scroll" id="popular-anime">
@@ -883,7 +999,7 @@
         <!-- Latest Episodes Section -->
         <section id="latest-section" class="mt-12">
             <div class="section-title">
-                <h2><i class="ph ph-clock mr-2"></i>Latest Episodes</h2>
+                <h2><i class="ph ph-clock"></i>Latest Episodes</h2>
                 <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
             </div>
             <div class="grid-scroll" id="latest-episodes">
@@ -896,7 +1012,7 @@
         <!-- Tagalog Dubbed Anime Section -->
         <section id="tagalog-section" class="mt-12">
             <div class="section-title">
-                <h2><i class="ph ph-microphone mr-2"></i>Tagalog Dubbed Anime</h2>
+                <h2><i class="ph ph-microphone"></i>Tagalog Dubbed Anime</h2>
                 <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
             </div>
             <div class="grid-scroll" id="tagalog-anime">
@@ -909,7 +1025,7 @@
         <!-- Upcoming Releases Section -->
         <section id="upcoming-section" class="mt-12">
             <div class="section-title">
-                <h2><i class="ph ph-calendar mr-2"></i>Upcoming Releases</h2>
+                <h2><i class="ph ph-calendar"></i>Upcoming Releases</h2>
                 <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2" id="upcoming-releases">
@@ -918,9 +1034,6 @@
                 </div>
             </div>
         </section>
-        
-        <!-- Backup UI Container -->
-        <div id="backup-container" class="mt-12"></div>
     </main>
     
     <footer class="footer">
@@ -1003,12 +1116,11 @@
     <script src="/js/persistence.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize persistence manager
+            // Initialize persistence manager (without UI)
             const persistenceManager = new AnimePersistenceManager('');
-            persistenceManager.createBackupUI('backup-container');
             persistenceManager.startKeepAlive();
             
-            // Check for server data on page load
+            // Check for server data on page load (just for restoration, no UI)
             fetch('/health')
                 .then(response => response.json())
                 .then(data => {
@@ -1209,6 +1321,9 @@
                     day: 'numeric'
                 });
                 
+                // Calculate if the release date is coming soon (within next 7 days)
+                const isComingSoon = (releaseDate - new Date()) / (1000 * 60 * 60 * 24) <= 7;
+                
                 releaseCard.innerHTML = `
                     <div class="upcoming-thumb">
                         <img src="${release.thumbnail}" alt="${release.title}">
@@ -1219,8 +1334,9 @@
                             <i class="ph ph-calendar"></i> ${formattedDate}
                         </div>
                         ${release.hasTagalogDub ? '<div class="upcoming-info"><i class="ph ph-microphone"></i> Tagalog Dub</div>' : ''}
-                        ${release.notes ? `<div class="upcoming-info">${release.notes}</div>` : ''}
+                        ${release.notes ? `<div class="upcoming-info"><i class="ph ph-note"></i> ${release.notes}</div>` : ''}
                     </div>
+                    ${isComingSoon ? '<div class="upcoming-soon">SOON</div>' : ''}
                 `;
                 
                 upcomingSection.appendChild(releaseCard);
@@ -1232,10 +1348,16 @@
             const card = document.createElement('div');
             card.className = 'anime-card';
             
+            // Determine the badge class for styling
+            let badgeClass = '';
+            if (anime.hasTagalogDub) {
+                badgeClass = 'tagalog';
+            }
+            
             card.innerHTML = `
                 <div class="anime-card-thumb">
                     <img src="${anime.thumbnail}" alt="${anime.title}" class="anime-card-img">
-                    ${anime.hasTagalogDub ? '<div class="anime-card-badge">Tagalog Dub</div>' : ''}
+                    ${anime.hasTagalogDub ? '<div class="anime-card-badge tagalog">Tagalog Dub</div>' : ''}
                     ${badge && !anime.hasTagalogDub ? `<div class="anime-card-badge">${badge}</div>` : ''}
                 </div>
                 <div class="anime-card-content">
@@ -1354,8 +1476,17 @@
             
             // Hide admin modal
             adminCancel.addEventListener('click', function() {
+                adminModal.classList.remove('hidden');
                 adminModal.classList.remove('show');
                 adminPassword.value = '';
+            });
+            
+            // Close modal when clicking outside
+            adminModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    adminModal.classList.remove('show');
+                    adminPassword.value = '';
+                }
             });
             
             // Login
