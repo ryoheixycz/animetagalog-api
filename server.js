@@ -11,7 +11,7 @@ const HOST = process.env.HOST || '0.0.0.0'; // This ensures binding to all netwo
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for larger data transfers
 app.use(express.static('public'));
 
 // Data file paths - use environment variable for data directory in production
@@ -245,11 +245,16 @@ const formatSearchResults = (anilistData) => {
 // Cache for anime data to reduce API calls
 const animeCache = new Map();
 
-// Load data files on startup
+// In-memory data storage
 let customAnimeList = [];
 let episodes = [];
 let scheduledAnime = [];
 
+// Data state tracking
+let dataLoaded = false;
+let lastExportTimestamp = null;
+
+// Load data files on startup
 try {
     console.log("Loading custom anime list from disk...");
     customAnimeList = readData(CUSTOM_ANIME_FILE);
@@ -262,19 +267,332 @@ try {
     console.log("Loading scheduled anime from disk...");
     scheduledAnime = readData(SCHEDULED_ANIME_FILE);
     console.log(`Loaded ${scheduledAnime.length} scheduled anime entries`);
+    
+    dataLoaded = true;
 } catch (error) {
     console.error("Error loading data files:", error);
 }
 
-// Data sync interval (save to disk every 5 minutes)
-const syncInterval = 5 * 60 * 1000; // 5 minutes
+// Serve an HTML page with a hidden iframe to keep the service alive
+app.get('/keepalive', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Anime API Keepalive</title>
+            <meta http-equiv="refresh" content="840"> <!-- Refresh page every 14 minutes -->
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                    color: #333;
+                }
+                .container {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                h1 {
+                    color: #2c3e50;
+                    border-bottom: 2px solid #eee;
+                    padding-bottom: 10px;
+                }
+                button {
+                    background-color: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    margin-right: 10px;
+                    transition: background-color 0.2s;
+                }
+                button:hover {
+                    background-color: #2980b9;
+                }
+                .status-box {
+                    margin: 20px 0;
+                    padding: 15px;
+                    background-color: #f8f9fa;
+                    border-left: 4px solid #3498db;
+                    border-radius: 4px;
+                }
+                .stats {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                    gap: 10px;
+                    margin: 20px 0;
+                }
+                .stat-card {
+                    background: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 4px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+                .stat-value {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #3498db;
+                }
+                .footer {
+                    margin-top: 30px;
+                    font-size: 12px;
+                    color: #7f8c8d;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Anime API Keepalive Page</h1>
+                <p>This page helps keep your Render deployment active. Leave it open in a browser tab.</p>
+                
+                <div class="status-box">
+                    <p><strong>Current server time:</strong> ${new Date().toLocaleString()}</p>
+                    <p><strong>Last data sync:</strong> ${lastExportTimestamp ? new Date(lastExportTimestamp).toLocaleString() : 'None yet'}</p>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div>Anime Count</div>
+                        <div class="stat-value">${customAnimeList.length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Episodes Count</div>
+                        <div class="stat-value">${episodes.length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Scheduled Items</div>
+                        <div class="stat-value">${scheduledAnime.length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Cache Size</div>
+                        <div class="stat-value">${animeCache.size}</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <button id="pingBtn">Ping Server</button>
+                    <button id="downloadBackup">Download Backup</button>
+                    <button id="restoreBackup">Restore from Backup</button>
+                    <span id="pingStatus" style="margin-left: 10px;"></span>
+                </div>
+                
+                <div class="footer">
+                    <p>Your anime data is automatically saved every 10 minutes. To ensure data persistence, leave this tab open or download regular backups.</p>
+                </div>
+            </div>
+            
+            <iframe src="/health" style="width:0;height:0;border:0;visibility:hidden;"></iframe>
+            
+            <script>
+                // Ping every 5 minutes
+                setInterval(() => {
+                    fetch('/health')
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('pingStatus').innerText = 'Server active: ' + new Date().toLocaleTimeString();
+                        })
+                        .catch(error => {
+                            document.getElementById('pingStatus').innerText = 'Error: ' + error.message;
+                        });
+                }, 300000);
+                
+                // Manual ping
+                document.getElementById('pingBtn').addEventListener('click', () => {
+                    document.getElementById('pingStatus').innerText = 'Pinging...';
+                    fetch('/health')
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('pingStatus').innerText = 'Success! Server active: ' + new Date().toLocaleTimeString();
+                        })
+                        .catch(error => {
+                            document.getElementById('pingStatus').innerText = 'Error: ' + error.message;
+                        });
+                });
+                
+                // Download backup
+                document.getElementById('downloadBackup').addEventListener('click', () => {
+                    fetch('/api/export')
+                        .then(response => response.json())
+                        .then(data => {
+                            // Create a download link
+                            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'anime_backup_' + new Date().toISOString().slice(0,10) + '.json';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        });
+                });
+                
+                // Restore from backup
+                document.getElementById('restoreBackup').addEventListener('click', () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+                    input.onchange = (event) => {
+                        const file = event.target.files[0];
+                        if (!file) return;
+                        
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const contents = e.target.result;
+                            try {
+                                const data = JSON.parse(contents);
+                                
+                                // Send to server
+                                fetch('/api/import', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(data)
+                                })
+                                .then(response => response.json())
+                                .then(result => {
+                                    alert('Backup restored successfully! ' + 
+                                          'Anime: ' + result.counts.anime + ', ' +
+                                          'Episodes: ' + result.counts.episodes + ', ' +
+                                          'Scheduled: ' + result.counts.scheduled);
+                                    // Reload the page to update stats
+                                    window.location.reload();
+                                })
+                                .catch(error => {
+                                    alert('Error restoring backup: ' + error.message);
+                                });
+                            } catch (error) {
+                                alert('Invalid backup file: ' + error.message);
+                            }
+                        };
+                        reader.readAsText(file);
+                    };
+                    input.click();
+                });
+                
+                // Auto-refresh page content
+                setInterval(() => {
+                    fetch('/health')
+                        .then(response => response.json())
+                        .then(data => {
+                            const stats = data.dataStats;
+                            document.querySelectorAll('.stat-value')[0].innerText = stats.customAnimeCount;
+                            document.querySelectorAll('.stat-value')[1].innerText = stats.episodesCount;
+                            document.querySelectorAll('.stat-value')[2].innerText = stats.scheduledCount;
+                            document.querySelectorAll('.stat-value')[3].innerText = stats.cacheSize;
+                        })
+                        .catch(error => console.error('Error updating stats:', error));
+                }, 60000); // Update stats every minute
+            </script>
+        </body>
+        </html>
+    `);
+});
+
+// Data sync interval (now every 10 minutes to better preserve data)
+const syncInterval = 10 * 60 * 1000; // 10 minutes
 setInterval(() => {
     console.log("Syncing data to disk...");
     writeData(CUSTOM_ANIME_FILE, customAnimeList);
     writeData(EPISODES_FILE, episodes);
     writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
     console.log("Data sync complete");
+    lastExportTimestamp = Date.now();
 }, syncInterval);
+
+// Auto-trigger browser storage backup endpoint (for embedded clients)
+app.get('/api/auto-backup', (req, res) => {
+    const exportData = {
+        anime: customAnimeList,
+        episodes,
+        scheduled: scheduledAnime,
+        exportDate: new Date().toISOString(),
+        exportVersion: "1.2"
+    };
+    
+    res.json(exportData);
+});
+
+// Keep-alive ping (no data change, just to prevent spin-down)
+app.get('/api/ping', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Browser-stored backup integration
+app.post('/api/browser-backup', (req, res) => {
+    try {
+        const backupData = req.body;
+        
+        if (!backupData || typeof backupData !== 'object') {
+            return res.status(400).json({ error: 'Invalid browser backup data' });
+        }
+        
+        console.log("Received browser backup, validating...");
+        
+        // Only restore from browser backup if our current data is empty or nonexistent
+        if (!dataLoaded || 
+            (customAnimeList.length === 0 && episodes.length === 0 && scheduledAnime.length === 0)) {
+            
+            // Validate the backup structure
+            if (Array.isArray(backupData.anime) && 
+                Array.isArray(backupData.episodes) && 
+                Array.isArray(backupData.scheduled)) {
+                
+                console.log("Restoring data from browser backup...");
+                
+                // Update in-memory data
+                customAnimeList = backupData.anime;
+                episodes = backupData.episodes;
+                scheduledAnime = backupData.scheduled;
+                
+                // Clear cache to force refresh
+                animeCache.clear();
+                
+                // Write to disk immediately
+                writeData(CUSTOM_ANIME_FILE, customAnimeList);
+                writeData(EPISODES_FILE, episodes);
+                writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
+                
+                dataLoaded = true;
+                
+                res.json({ 
+                    message: 'Browser backup restore successful', 
+                    counts: {
+                        anime: customAnimeList.length,
+                        episodes: episodes.length,
+                        scheduled: scheduledAnime.length
+                    } 
+                });
+                
+                console.log("Data restored from browser backup");
+            } else {
+                res.status(400).json({ error: 'Invalid browser backup structure' });
+            }
+        } else {
+            res.json({ 
+                message: 'Server already has data, browser backup not applied', 
+                counts: {
+                    anime: customAnimeList.length,
+                    episodes: episodes.length,
+                    scheduled: scheduledAnime.length
+                } 
+            });
+        }
+    } catch (error) {
+        console.error("Error processing browser backup:", error);
+        res.status(500).json({ error: 'Failed to process browser backup: ' + error.message });
+    }
+});
 
 // API Routes
 // Get all anime (from custom list)
@@ -876,8 +1194,11 @@ app.get('/api/export', (req, res) => {
     episodes,
     scheduled: scheduledAnime,
     exportDate: new Date().toISOString(),
-    exportVersion: "1.1"
+    exportVersion: "1.2"
   };
+  
+  // Update export timestamp
+  lastExportTimestamp = Date.now();
   
   res.json(exportData);
 });
@@ -905,22 +1226,21 @@ app.post('/api/import', (req, res) => {
     animeCache.clear();
     
     // Write to disk immediately
-    if (
-      writeData(CUSTOM_ANIME_FILE, customAnimeList) && 
-      writeData(EPISODES_FILE, episodes) &&
-      writeData(SCHEDULED_ANIME_FILE, scheduledAnime)
-    ) {
-      res.json({ 
-        message: 'Import successful', 
-        counts: {
-          anime: customAnimeList.length,
-          episodes: episodes.length,
-          scheduled: scheduledAnime.length
-        } 
-      });
-    } else {
-      res.status(500).json({ error: 'Failed to write imported data to disk' });
-    }
+    writeData(CUSTOM_ANIME_FILE, customAnimeList);
+    writeData(EPISODES_FILE, episodes);
+    writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
+    
+    dataLoaded = true;
+    lastExportTimestamp = Date.now();
+    
+    res.json({ 
+      message: 'Import successful', 
+      counts: {
+        anime: customAnimeList.length,
+        episodes: episodes.length,
+        scheduled: scheduledAnime.length
+      } 
+    });
   } catch (error) {
     console.error("Error importing data:", error);
     res.status(500).json({ error: 'Failed to import data: ' + error.message });
@@ -933,7 +1253,8 @@ app.get('/health', (req, res) => {
     customAnimeCount: customAnimeList.length,
     episodesCount: episodes.length,
     scheduledCount: scheduledAnime.length,
-    cacheSize: animeCache.size
+    cacheSize: animeCache.size,
+    lastSync: lastExportTimestamp ? new Date(lastExportTimestamp).toISOString() : null
   };
   
   res.status(200).json({ 
@@ -943,66 +1264,14 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Handle SPA routing for admin panel
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Start the server
-app.listen(PORT, HOST, () => {
-  console.log(`Server running on http://${HOST}:${PORT}`);
-  console.log(`API Documentation: http://${HOST}:${PORT}`);
-  console.log(`Data directory: ${DATA_DIR}`);
-});
-
-// Handle errors gracefully
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  
-  // Try to save data on critical error
-  try {
-    console.log("Attempting to save data before shutdown due to uncaught exception...");
-    writeData(CUSTOM_ANIME_FILE, customAnimeList);
-    writeData(EPISODES_FILE, episodes);
-    writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
-    console.log("Emergency data save completed");
-  } catch (saveError) {
-    console.error("Failed to save data during shutdown:", saveError);
-  }
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-// Clean up resources before shutdown
-process.on('SIGINT', () => {
-  console.log('Server shutting down...');
-  
-  // Save all data before exit
-  console.log("Saving data before shutdown...");
-  writeData(CUSTOM_ANIME_FILE, customAnimeList);
-  writeData(EPISODES_FILE, episodes);
-  writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
-  console.log("Final data save completed");
-  
-  process.exit(0);
-});
-
 // Schedule automatic health check (run every 5 minutes)
 setInterval(() => {
-  axios.get(`http://${HOST}:${PORT}/health`)
-    .then(response => {
-      if (response.data.status === 'ok') {
-        console.log(`Health check passed at ${response.data.timestamp}`);
-        console.log(`Data stats: ${JSON.stringify(response.data.dataStats)}`);
-      } else {
-        console.error('Health check failed');
-      }
-    })
-    .catch(error => {
-      console.error('Health check error:', error.message);
-    });
+  try {
+    console.log(`Health check at ${new Date().toISOString()}`);
+    console.log(`Data stats: Anime=${customAnimeList.length}, Episodes=${episodes.length}, Scheduled=${scheduledAnime.length}`);
+  } catch (error) {
+    console.error('Health check error:', error.message);
+  }
 }, 300000); // 5 minutes in milliseconds
 
 // Data backup job (every 24 hours)
@@ -1044,3 +1313,57 @@ setInterval(() => {
     console.error("Backup operation failed:", error);
   }
 }, backupInterval);
+
+// Handle SPA routing for admin panel
+app.get('*', (req, res) => {
+  // Check if it's a path that might be for the frontend
+  if (req.path.startsWith('/admin') || 
+      req.path === '/' || 
+      req.path === '/index.html') {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } else {
+    // If it's not a known API or frontend route, also serve the SPA
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
+});
+
+// Start the server
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
+  console.log(`Visit http://${HOST}:${PORT}/keepalive to keep the server alive`);
+  console.log(`Data directory: ${DATA_DIR}`);
+});
+
+// Handle errors gracefully
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  
+  // Try to save data on critical error
+  try {
+    console.log("Attempting to save data before shutdown due to uncaught exception...");
+    writeData(CUSTOM_ANIME_FILE, customAnimeList);
+    writeData(EPISODES_FILE, episodes);
+    writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
+    console.log("Emergency data save completed");
+  } catch (saveError) {
+    console.error("Failed to save data during shutdown:", saveError);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Clean up resources before shutdown
+process.on('SIGINT', () => {
+  console.log('Server shutting down...');
+  
+  // Save all data before exit
+  console.log("Saving data before shutdown...");
+  writeData(CUSTOM_ANIME_FILE, customAnimeList);
+  writeData(EPISODES_FILE, episodes);
+  writeData(SCHEDULED_ANIME_FILE, scheduledAnime);
+  console.log("Final data save completed");
+  
+  process.exit(0);
+});
