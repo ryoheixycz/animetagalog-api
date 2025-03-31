@@ -18,8 +18,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     
     <!-- Vidstack Player -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/vidstack@next/cdn/with-layouts/vidstack.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vidstack@next/cdn/with-layouts/vidstack.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/vidstack@1.9.8/dist/vidstack.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vidstack@1.9.8/player/styles/default/theme.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vidstack@1.9.8/player/styles/default/layouts/video.min.css">
     
     <style>
         :root {
@@ -444,16 +445,23 @@
         }
         
         /* Vidstack player styles */
-        .media-player[data-view-type="video"] {
+        media-player {
+            --media-brand: hsl(0, 0%, 96%);
+            --media-focus-ring: 0 0 0 3px rgba(0, 0, 0, 0.35);
+            width: 100%;
             aspect-ratio: 16 / 9;
+            border-radius: var(--radius);
+            color: white;
         }
         
-        .vds-video-layout {
-            --video-brand: hsl(0, 0%, 96%);
+        media-player::part(controls) {
+            --media-control-background: rgba(0, 0, 0, 0.4);
+            --media-control-hover-background: rgba(0, 0, 0, 0.6);
         }
         
-        .dark .vds-video-layout {
-            --video-brand: hsl(0, 0%, 85%);
+        .dark media-player {
+            --media-brand: hsl(0, 0%, 85%);
+            --media-focus-ring: 0 0 0 3px rgba(255, 255, 255, 0.35);
         }
         
         /* Anime details */
@@ -811,6 +819,7 @@
         <section class="video-section">
             <div class="loader-container" id="video-loader">
                 <div class="loader"></div>
+                <div class="debug-message" id="debug-message">Loading video player...</div>
             </div>
             
             <div class="video-container hidden" id="video-container">
@@ -825,16 +834,17 @@
                         id="media-player"
                         view-type="video"
                         stream-type="on-demand"
-                        log-level="warn"
                         crossorigin
                         playsinline
                         autoplay
+                        controls
                     >
                         <media-provider>
                             <media-poster class="vds-poster" id="media-poster"></media-poster>
                             <source src="" type="video/mp4" id="video-source" />
+                            <!-- Tracks will be added dynamically if needed -->
                         </media-provider>
-                        <media-video-layout thumbnails=""></media-video-layout>
+                        <media-video-layout></media-video-layout>
                     </media-player>
                 </div>
                 
@@ -993,6 +1003,11 @@
                 return;
             }
             
+            // Register custom elements if needed (for older browsers)
+            if (customElements && !customElements.get('media-player')) {
+                console.log('Vidstack custom elements need to be registered - this should happen automatically');
+            }
+            
             // Setup theme toggle
             setupThemeToggle();
             
@@ -1001,6 +1016,9 @@
             
             // Setup search functionality
             setupSearch();
+            
+            // Setup server switching
+            setupServerSwitching();
             
             // Fetch anime details and episodes
             fetchAnimeDetails(animeId);
@@ -1171,6 +1189,7 @@
         function playEpisode(episode) {
             const videoLoader = document.getElementById('video-loader');
             const videoContainer = document.getElementById('video-container');
+            const debugMessage = document.getElementById('debug-message');
             const mediaPlayer = document.getElementById('media-player');
             const videoSource = document.getElementById('video-source');
             const embedIframe = document.getElementById('embed-iframe');
@@ -1197,28 +1216,111 @@
                     videoContainer.classList.remove('hidden');
                 }, 1000);
             } else if (!useServer1 && episode.server2Url) {
-                // Use direct MP4 link for Server 2
+                // Use direct MP4 link for Server 2 through our proxy
                 mediaPlayer.classList.remove('hidden');
                 embedIframe.classList.add('hidden');
                 
-                videoSource.src = episode.server2Url;
-                mediaPlayer.load(); // Reload the player with new source
+                // Use our proxy for the video URL
+                const proxyUrl = `/api/proxy/video?url=${encodeURIComponent(episode.server2Url)}`;
                 
-                videoLoader.classList.add('hidden');
-                videoContainer.classList.remove('hidden');
+                // Update video source in the DOM element
+                videoSource.setAttribute('src', proxyUrl);
+                
+                // Get media provider and reset it to force video reload
+                const mediaProvider = mediaPlayer.querySelector('media-provider');
+                if (mediaProvider) {
+                    // Clear and recreate the video element to ensure proper loading
+                    mediaProvider.innerHTML = `
+                        <media-poster class="vds-poster" src="${episode.thumbnail || ''}"></media-poster>
+                        <source src="${proxyUrl}" type="video/mp4" />
+                    `;
+                }
+                
+                // Force reload the media player
+                mediaPlayer.load();
+                
+                // Listen for errors
+                mediaPlayer.addEventListener('error', (event) => {
+                    console.error('Media player error:', event);
+                    debugMessage.textContent = 'Error loading video. Trying to recover...';
+                    
+                    // Try a fallback approach - sometimes direct MP4 URLs need specific headers
+                    const originalUrl = episode.server2Url;
+                    debugMessage.textContent = `Error with proxy. Trying direct URL...`;
+                    
+                    // Get media provider and reset it
+                    const mediaProvider = mediaPlayer.querySelector('media-provider');
+                    if (mediaProvider) {
+                        mediaProvider.innerHTML = `
+                            <media-poster class="vds-poster" src="${episode.thumbnail || ''}"></media-poster>
+                            <source src="${originalUrl}" type="video/mp4" />
+                        `;
+                    }
+                    
+                    // Try reloading
+                    mediaPlayer.load();
+                    
+                    // Show the player after a delay
+                    setTimeout(() => {
+                        videoLoader.classList.add('hidden');
+                        videoContainer.classList.remove('hidden');
+                    }, 2000);
+                }, { once: true });
+                
+                // Listen for successful loading
+                mediaPlayer.addEventListener('can-play', () => {
+                    videoLoader.classList.add('hidden');
+                    videoContainer.classList.remove('hidden');
+                    mediaPlayer.play();
+                }, { once: true });
+                
+                // Fallback timeout in case can-play event doesn't fire
+                setTimeout(() => {
+                    videoLoader.classList.add('hidden');
+                    videoContainer.classList.remove('hidden');
+                }, 3000);
             } else {
                 // Use a demo video if no sources available (for testing)
                 mediaPlayer.classList.remove('hidden');
                 embedIframe.classList.add('hidden');
                 
-                videoSource.src = "https://files.vidstack.io/sprite-fight/720p.mp4";
-                mediaPlayer.load(); // Reload the player with new source
+                const demoUrl = "https://files.vidstack.io/sprite-fight/720p.mp4";
+                videoSource.setAttribute('src', demoUrl);
                 
-                videoLoader.classList.add('hidden');
-                videoContainer.classList.remove('hidden');
+                // Get media provider and reset it
+                const mediaProvider = mediaPlayer.querySelector('media-provider');
+                if (mediaProvider) {
+                    mediaProvider.innerHTML = `
+                        <media-poster class="vds-poster" src="https://files.vidstack.io/sprite-fight/poster.webp"></media-poster>
+                        <source src="${demoUrl}" type="video/mp4" />
+                    `;
+                }
+                
+                // Force reload the media player
+                mediaPlayer.load();
+                
+                // Listen for errors
+                mediaPlayer.addEventListener('error', (event) => {
+                    console.error('Media player error with demo video:', event);
+                    videoLoader.classList.add('hidden');
+                    videoContainer.classList.remove('hidden');
+                }, { once: true });
+                
+                // Listen for successful loading
+                mediaPlayer.addEventListener('can-play', () => {
+                    videoLoader.classList.add('hidden');
+                    videoContainer.classList.remove('hidden');
+                    mediaPlayer.play();
+                }, { once: true });
+                
+                // Fallback timeout
+                setTimeout(() => {
+                    videoLoader.classList.add('hidden');
+                    videoContainer.classList.remove('hidden');
+                }, 3000);
                 
                 // Show a message
-                alert('Demo video loaded. No actual video source available for this episode.');
+                console.log('Demo video loaded. No actual video source available for this episode.');
             }
             
             // Update episode title in player
@@ -1322,8 +1424,8 @@
             });
         }
         
-        // Server switching functionality
-        document.addEventListener('DOMContentLoaded', function() {
+        // Setup server switching functionality
+        function setupServerSwitching() {
             const server1Btn = document.getElementById('server1-btn');
             const server2Btn = document.getElementById('server2-btn');
             
@@ -1343,6 +1445,10 @@
                         .then(response => response.json())
                         .then(episode => {
                             playEpisode(episode);
+                        })
+                        .catch(error => {
+                            console.error('Error fetching episode:', error);
+                            alert('Failed to switch server. Please try again.');
                         });
                 }
             });
@@ -1363,10 +1469,14 @@
                         .then(response => response.json())
                         .then(episode => {
                             playEpisode(episode);
+                        })
+                        .catch(error => {
+                            console.error('Error fetching episode:', error);
+                            alert('Failed to switch server. Please try again.');
                         });
                 }
             });
-        });
+        }
     </script>
 </body>
 </html>
