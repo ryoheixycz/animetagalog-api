@@ -1314,6 +1314,93 @@ setInterval(() => {
   }
 }, backupInterval);
 
+// Video proxy endpoint
+app.get('/api/proxy/video', async (req, res) => {
+  const { url } = req.query;
+  
+  if (!url) {
+    return res.status(400).json({ error: 'URL parameter is required' });
+  }
+  
+  try {
+    // Validate URL
+    const videoUrl = new URL(url);
+    
+    // Setup headers for streaming
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    // Create a request with headers that mimic a browser
+    const options = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Range': req.headers.range || 'bytes=0-',
+        'Referer': videoUrl.origin
+      },
+      responseType: 'stream'
+    };
+    
+    // Handle range requests (important for video streaming)
+    if (req.headers.range) {
+      options.headers.Range = req.headers.range;
+    }
+    
+    // Make request to the remote server using axios
+    const videoResponse = await axios({
+      method: 'get',
+      url: videoUrl.href,
+      ...options
+    });
+    
+    // Forward response headers
+    if (videoResponse.headers['content-length']) {
+      res.setHeader('Content-Length', videoResponse.headers['content-length']);
+    }
+    
+    if (videoResponse.headers['content-range']) {
+      res.setHeader('Content-Range', videoResponse.headers['content-range']);
+    }
+    
+    if (videoResponse.headers['accept-ranges']) {
+      res.setHeader('Accept-Ranges', videoResponse.headers['accept-ranges']);
+    }
+    
+    // Set status code based on whether this is a partial content request
+    res.status(videoResponse.status);
+    
+    // Stream the video content
+    videoResponse.data.pipe(res);
+  } catch (error) {
+    console.error('Video proxy error:', error.message);
+    
+    // If the video URL is invalid or unreachable, return an error
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      return res.status(404).json({ error: 'Video source not found or unavailable' });
+    }
+    
+    // For CORS or other request errors
+    if (error.response) {
+      return res.status(error.response.status || 500).json({ 
+        error: 'Error fetching video content',
+        details: error.message
+      });
+    }
+    
+    res.status(500).json({ error: 'Failed to proxy video content', details: error.message });
+  }
+});
+
+// Add CORS headers specifically for video sources
+app.options('/api/proxy/video', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Range, Accept, Content-Type');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+  res.sendStatus(200);
+});
+
 // Handle SPA routing for admin panel
 app.get('*', (req, res) => {
   // Check if it's a path that might be for the frontend
