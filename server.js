@@ -883,7 +883,147 @@ app.post('/api/anime', async (req, res) => {
   }
 });
 
-// Add new episode - simplified to only require animeId and server URLs
+// Bulk import episodes from structured data
+app.post('/api/bulk-import', async (req, res) => {
+  try {
+    const { animeId, episodes: newEpisodes } = req.body;
+    
+    if (!animeId) {
+      return res.status(400).json({ error: 'Anime ID is required' });
+    }
+    
+    if (!Array.isArray(newEpisodes) || newEpisodes.length === 0) {
+      return res.status(400).json({ error: 'Episodes array is required and must not be empty' });
+    }
+    
+    // Check if anime exists in our list
+    const animeExists = customAnimeList.some(a => a.id === animeId);
+    
+    if (!animeExists) {
+      return res.status(404).json({ error: 'Anime not found in our list' });
+    }
+    
+    const addedEpisodes = [];
+    
+    // Get existing episodes to avoid duplicates
+    const existingEpisodes = episodes.filter(e => e.animeId === animeId);
+    const existingEpisodeNumbers = new Set(existingEpisodes.map(e => e.number));
+    
+    for (const episodeData of newEpisodes) {
+      // Skip if episode number already exists
+      if (existingEpisodeNumbers.has(episodeData.number)) {
+        continue;
+      }
+      
+      // Create new episode with proper ID and title/description
+      const newEpisode = {
+        id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 5),
+        animeId: animeId,
+        title: episodeData.title || `Episode ${episodeData.number}`,
+        number: episodeData.number,
+        description: episodeData.description || `${episodeData.title || `Episode ${episodeData.number}`} description`,
+        iframeSrc: episodeData.iframeSrc || "",
+        hasTagalogDub: episodeData.hasTagalogDub === true,
+        dateAdded: new Date().toISOString()
+      };
+      
+      episodes.push(newEpisode);
+      addedEpisodes.push(newEpisode);
+      existingEpisodeNumbers.add(episodeData.number);
+    }
+    
+    // Write to disk immediately to prevent data loss
+    if (writeData(EPISODES_FILE, episodes)) {
+      // Update anime's Tagalog dub status if any episode has Tagalog dub
+      if (addedEpisodes.some(e => e.hasTagalogDub)) {
+        const animeIndex = customAnimeList.findIndex(a => a.id === animeId);
+        if (animeIndex !== -1) {
+          customAnimeList[animeIndex].hasTagalogDub = true;
+          writeData(CUSTOM_ANIME_FILE, customAnimeList);
+          
+          // Update cache if exists
+          if (animeCache.has(animeId)) {
+            const cachedAnime = animeCache.get(animeId);
+            cachedAnime.hasTagalogDub = true;
+            animeCache.set(animeId, cachedAnime);
+          }
+        }
+      }
+      
+      res.status(201).json({
+        message: `Successfully added ${addedEpisodes.length} episodes`,
+        addedEpisodes: addedEpisodes
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to add episodes' });
+    }
+  } catch (error) {
+    console.error("Error adding episodes in bulk:", error);
+    res.status(500).json({ error: 'Failed to add episodes: ' + error.message });
+  }
+});
+
+// Parse episode data from HTML select options
+app.post('/api/parse-episodes', async (req, res) => {
+  try {
+    const { animeId, htmlContent } = req.body;
+    
+    if (!animeId) {
+      return res.status(400).json({ error: 'Anime ID is required' });
+    }
+    
+    if (!htmlContent) {
+      return res.status(400).json({ error: 'HTML content is required' });
+    }
+    
+    // Check if anime exists in our list
+    const animeExists = customAnimeList.some(a => a.id === animeId);
+    
+    if (!animeExists) {
+      return res.status(404).json({ error: 'Anime not found in our list' });
+    }
+    
+    // Simple regex to extract episode data from option tags
+    // We will now ignore server2 URLs and only use server1
+    const optionRegex = /<option value="(\d+)" data-server1="([^"]*)"[^>]*>([^<]+)<\/option>/g;
+    
+    const parsedEpisodes = [];
+    let match;
+    
+    while ((match = optionRegex.exec(htmlContent)) !== null) {
+      const episodeNumber = parseInt(match[1]);
+      const server1Url = match[2];
+      const episodeTitle = match[3].trim();
+      
+      // Only add if we have a valid server1 URL and it's not "LINK1"
+      if (server1Url && server1Url !== "LINK1") {
+        parsedEpisodes.push({
+          number: episodeNumber,
+          title: episodeTitle,
+          description: `${episodeTitle} description`,
+          iframeSrc: server1Url,
+          hasTagalogDub: false
+        });
+      }
+    }
+    
+    if (parsedEpisodes.length === 0) {
+      return res.status(400).json({ error: 'No valid episodes found in the HTML content' });
+    }
+    
+    res.json({
+      animeId,
+      parsedEpisodes,
+      message: `Successfully parsed ${parsedEpisodes.length} episodes`
+    });
+    
+  } catch (error) {
+    console.error("Error parsing episodes:", error);
+    res.status(500).json({ error: 'Failed to parse episodes: ' + error.message });
+  }
+});
+
+// Add new episode - now with description and only server1
 app.post('/api/episodes', async (req, res) => {
   // Check if anime exists in our list
   const animeExists = customAnimeList.some(a => a.id === req.body.animeId);
@@ -906,8 +1046,8 @@ app.post('/api/episodes', async (req, res) => {
     animeId: req.body.animeId,
     title: episodeTitle,
     number: nextEpisodeNumber,
+    description: req.body.description || `${episodeTitle} description`,
     iframeSrc: req.body.iframeSrc || "",
-    server2Url: req.body.server2Url || "",
     hasTagalogDub: req.body.hasTagalogDub === true,
     dateAdded: new Date().toISOString()
   };
@@ -996,7 +1136,7 @@ app.post('/api/scheduled', async (req, res) => {
   }
 });
 
-// Update episode
+// Update episode now with support for descriptions
 app.put('/api/episodes/:id', (req, res) => {
   const episodeId = req.params.id;
   const episodeIndex = episodes.findIndex(e => e.id === episodeId);
@@ -1010,6 +1150,11 @@ app.put('/api/episodes/:id', (req, res) => {
     ...req.body,
     id: episodeId // Ensure ID remains the same
   };
+  
+  // If title is updated but description is not, update the description
+  if (req.body.title && !req.body.description) {
+    episodes[episodeIndex].description = `${req.body.title} description`;
+  }
   
   // Check if this is setting Tagalog dub for the first time
   if (req.body.hasTagalogDub === true && episodes[episodeIndex].hasTagalogDub !== true) {
@@ -1453,4 +1598,4 @@ process.on('SIGINT', () => {
   console.log("Final data save completed");
   
   process.exit(0);
-});
+})
