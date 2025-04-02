@@ -1,1535 +1,1890 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeStream - Watch Anime Online</title>
-    <meta http-equiv="refresh" content="1800"> <!-- Refresh every 30 minutes to keep connection -->
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="
-https://cdn.jsdelivr.net/npm/phosphor-icons@1.4.2/src/index.min.js
-"></script>
-<link href="
-https://cdn.jsdelivr.net/npm/phosphor-icons@1.4.2/src/css/icons.min.css
-" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime API Admin</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Outfit Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <style>
+    /* CSS Variables for shadcn UI-like theme */
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 222.2 84% 4.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
+      --popover: 0 0% 100%;
+      --popover-foreground: 222.2 84% 4.9%;
+      --primary: 221.2 83.2% 53.3%;
+      --primary-foreground: 210 40% 98%;
+      --secondary: 210 40% 96.1%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --accent: 210 40% 96.1%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 214.3 31.8% 91.4%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 221.2 83.2% 53.3%;
+      --radius: 0.5rem;
+    }
 
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    
-    <style>
-        :root {
-            /* Colors */
-            --background: 0 0% 100%;
-            --foreground: 240 10% 3.9%;
-            --card: 0 0% 100%;
-            --card-foreground: 240 10% 3.9%;
-            --popover: 0 0% 100%;
-            --popover-foreground: 240 10% 3.9%;
-            --primary: 240 5.9% 10%;
-            --primary-foreground: 0 0% 98%;
-            --secondary: 240 4.8% 95.9%;
-            --secondary-foreground: 240 5.9% 10%;
-            --muted: 240 4.8% 95.9%;
-            --muted-foreground: 240 3.8% 46.1%;
-            --accent: 240 4.8% 95.9%;
-            --accent-foreground: 240 5.9% 10%;
-            --destructive: 0 84.2% 60.2%;
-            --destructive-foreground: 0 0% 98%;
-            --border: 240 5.9% 90%;
-            --input: 240 5.9% 90%;
-            --ring: 240 5.9% 10%;
-            --radius: 0.5rem;
-            
-            /* Shadows */
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    .dark {
+      --background: 222.2 84% 4.9%;
+      --foreground: 210 40% 98%;
+      --card: 222.2 84% 4.9%;
+      --card-foreground: 210 40% 98%;
+      --popover: 222.2 84% 4.9%;
+      --popover-foreground: 210 40% 98%;
+      --primary: 217.2 91.2% 59.8%;
+      --primary-foreground: 222.2 47.4% 11.2%;
+      --secondary: 217.2 32.6% 17.5%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 217.2 32.6% 17.5%;
+      --muted-foreground: 215 20.2% 65.1%;
+      --accent: 217.2 32.6% 17.5%;
+      --accent-foreground: 210 40% 98%;
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 217.2 32.6% 17.5%;
+      --input: 217.2 32.6% 17.5%;
+      --ring: 224.3 76.3% 48%;
+    }
 
-            /* Theme specific */
-            --header-height: 4rem;
-            --animation-duration: 0.2s;
-            --badge-size: 24px;
-        }
-
-        .dark {
-            --background: 240 10% 3.9%;
-            --foreground: 0 0% 98%;
-            --card: 240 10% 3.9%;
-            --card-foreground: 0 0% 98%;
-            --popover: 240 10% 3.9%;
-            --popover-foreground: 0 0% 98%;
-            --primary: 0 0% 98%;
-            --primary-foreground: 240 5.9% 10%;
-            --secondary: 240 3.7% 15.9%;
-            --secondary-foreground: 0 0% 98%;
-            --muted: 240 3.7% 15.9%;
-            --muted-foreground: 240 5% 64.9%;
-            --accent: 240 3.7% 15.9%;
-            --accent-foreground: 0 0% 98%;
-            --destructive: 0 62.8% 30.6%;
-            --destructive-foreground: 0 0% 98%;
-            --border: 240 3.7% 15.9%;
-            --input: 240 3.7% 15.9%;
-            --ring: 240 4.9% 83.9%;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        html {
-            scroll-behavior: smooth;
-        }
-        
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: hsl(var(--background));
-            color: hsl(var(--foreground));
-            min-height: 100vh;
-            line-height: 1.5;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 1rem;
-        }
-        
-        .dark-mode-toggle {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.5rem;
-            color: hsl(var(--foreground));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            transition: background-color var(--animation-duration) ease;
-        }
-        
-        .dark-mode-toggle:hover {
-            background-color: hsl(var(--secondary));
-        }
-        
-        /* Header */
-        .header {
-            position: sticky;
-            top: 0;
-            background-color: hsl(var(--background));
-            border-bottom: 1px solid hsl(var(--border));
-            height: var(--header-height);
-            z-index: 50;
-            backdrop-filter: blur(8px);
-        }
-        
-        .logo {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: hsl(var(--foreground));
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .logo i {
-            color: hsl(var(--primary));
-            font-size: 1.8rem;
-        }
-        
-        /* Search */
-        .search-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 0.6rem 1rem;
-            padding-left: 2.5rem;
-            border-radius: var(--radius);
-            border: 1px solid hsl(var(--border));
-            background-color: hsl(var(--background));
-            color: hsl(var(--foreground));
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9rem;
-            transition: border-color var(--animation-duration) ease;
-        }
-        
-        .search-input:focus {
-            outline: none;
-            border-color: hsl(var(--ring));
-            box-shadow: 0 0 0 2px hsla(var(--ring) / 0.2);
-        }
-        
-        .search-icon {
-            position: absolute;
-            left: 0.8rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: hsl(var(--muted-foreground));
-        }
-        
-        /* Navigation */
-        .nav {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-        }
-        
-        .nav-link {
-            text-decoration: none;
-            color: hsl(var(--foreground));
-            font-weight: 500;
-            font-size: 0.95rem;
-            padding: 0.5rem;
-            transition: color var(--animation-duration) ease;
-            position: relative;
-        }
-        
-        .nav-link:hover {
-            color: hsl(var(--primary));
-        }
-        
-        .nav-link.active {
-            font-weight: 600;
-            color: hsl(var(--primary));
-        }
-        
-        .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: -0.5rem;
-            left: 50%;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background-color: hsl(var(--primary));
-            transform: translateX(-50%);
-        }
-        
-        /* Hero section */
-        .hero {
-            position: relative;
-            height: 550px;
-            border-radius: var(--radius);
-            overflow: hidden;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-md);
-        }
-        
-        .hero-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scale(1.02); /* Subtle zoom effect */
-            transition: transform 10s ease;
-        }
-        
-        .hero:hover .hero-img {
-            transform: scale(1.05);
-        }
-        
-        .hero-gradient {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(to top, 
-                hsla(var(--background) / 1) 0%, 
-                hsla(var(--background) / 0.9) 20%, 
-                hsla(var(--background) / 0.7) 40%, 
-                hsla(var(--background) / 0.2) 70%, 
-                transparent 100%);
-        }
-        
-        .hero-content {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 3rem;
-            z-index: 1;
-        }
-        
-        .hero-title {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
-        }
-        
-        .hero-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            color: hsl(var(--muted-foreground));
-            font-size: 0.95rem;
-        }
-        
-        .hero-dot {
-            height: 4px;
-            width: 4px;
-            border-radius: 50%;
-            background-color: hsl(var(--muted-foreground));
-        }
-        
-        .hero-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-        
-        /* Section headings */
-        .section-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid hsl(var(--border));
-        }
-        
-        .section-title h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .section-title h2 i {
-            font-size: 1.3rem;
-            color: hsl(var(--primary));
-        }
-        
-        .section-title a {
-            color: hsl(var(--muted-foreground));
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color var(--animation-duration) ease;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .section-title a:hover {
-            color: hsl(var(--foreground));
-        }
-        
-        /* Anime card grid */
-        .grid-scroll {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-        
-        @media (max-width: 768px) {
-            .grid-scroll {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                grid-auto-flow: column;
-                grid-auto-columns: 33.333%;
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                padding-bottom: 1rem;
-                scrollbar-width: none; /* Firefox */
-                gap: 0.75rem;
-            }
-            
-            .grid-scroll::-webkit-scrollbar {
-                display: none; /* Chrome, Safari, Edge */
-            }
-            
-            .grid-scroll > * {
-                scroll-snap-align: start;
-            }
-        }
-        
-        /* Anime card */
-        .anime-card {
-            border-radius: var(--radius);
-            overflow: hidden;
-            background-color: hsl(var(--card));
-            border: 1px solid hsl(var(--border));
-            transition: transform var(--animation-duration) ease, box-shadow var(--animation-duration) ease, border-color var(--animation-duration) ease;
-            position: relative;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .anime-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-md);
-            border-color: hsl(var(--ring));
-        }
-        
-        .anime-card-thumb {
-            position: relative;
-            padding-top: 140%; /* Aspect ratio */
-            overflow: hidden;
-        }
-        
-        .anime-card-img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.8s ease;
-        }
-        
-        .anime-card:hover .anime-card-img {
-            transform: scale(1.05);
-        }
-        
-        .anime-card-badge {
-            position: absolute;
-            top: 0.75rem;
-            left: 0.75rem;
-            background-color: hsla(var(--background) / 0.8);
-            color: hsl(var(--foreground));
-            padding: 0.25rem 0.5rem;
-            border-radius: calc(var(--radius) - 0.125rem);
-            font-size: 0.7rem;
-            font-weight: 500;
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .anime-card-badge i {
-            font-size: 0.8rem;
-        }
-        
-        .anime-card-content {
-            padding: 1rem;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .anime-card-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .anime-card-info {
-            display: flex;
-            justify-content: space-between;
-            color: hsl(var(--muted-foreground));
-            font-size: 0.8rem;
-            margin-top: auto;
-        }
-        
-        .anime-card-rating {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .anime-card-rating i {
-            color: #ffc107;
-        }
-        
-        /* Button styles */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: var(--radius);
-            font-weight: 500;
-            font-size: 0.95rem;
-            line-height: 1;
-            height: 2.5rem;
-            padding: 0 1.5rem;
-            transition: all var(--animation-duration) ease;
-            cursor: pointer;
-            text-decoration: none;
-            white-space: nowrap;
-            border: 1px solid transparent;
-        }
-        
-        .btn-icon {
-            margin-right: 0.5rem;
-            font-size: 1.1rem;
-        }
-        
-        .btn-primary {
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-        }
-        
-        .btn-primary:hover {
-            background-color: hsl(var(--primary) / 0.9);
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .btn-secondary {
-            background-color: hsl(var(--secondary));
-            color: hsl(var(--secondary-foreground));
-        }
-        
-        .btn-secondary:hover {
-            background-color: hsl(var(--secondary) / 0.8);
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .btn-outline {
-            background-color: transparent;
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-        }
-        
-        .btn-outline:hover {
-            background-color: hsl(var(--secondary));
-            box-shadow: var(--shadow-sm);
-        }
-        
-        /* Upcoming releases */
-        .upcoming-card {
-            display: flex;
-            gap: 1rem;
-            background-color: hsl(var(--card));
-            border-radius: var(--radius);
-            overflow: hidden;
-            border: 1px solid hsl(var(--border));
-            padding: 1rem;
-            transition: all var(--animation-duration) ease;
-        }
-        
-        .upcoming-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-            border-color: hsl(var(--ring));
-        }
-        
-        .upcoming-thumb {
-            width: 80px;
-            height: 80px;
-            flex-shrink: 0;
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-        
-        .upcoming-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .upcoming-content {
-            flex: 1;
-        }
-        
-        .upcoming-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            font-size: 1rem;
-        }
-        
-        .upcoming-date {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            font-size: 0.8rem;
-            color: hsl(var(--accent-foreground));
-            background-color: hsl(var(--accent));
-            width: fit-content;
-            padding: 0.25rem 0.5rem;
-            border-radius: var(--radius);
-            margin-bottom: 0.5rem;
-        }
-        
-        .upcoming-info {
-            font-size: 0.8rem;
-            color: hsl(var(--muted-foreground));
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        /* Coming soon section */
-        .coming-soon {
-            background-color: hsl(var(--card));
-            border-radius: var(--radius);
-            border: 1px solid hsl(var(--border));
-            padding: 3rem;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        }
-        
-        .coming-soon i {
-            font-size: 3rem;
-            color: hsl(var(--primary));
-            margin-bottom: 1rem;
-        }
-        
-        .coming-soon h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        
-        .coming-soon p {
-            color: hsl(var(--muted-foreground));
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        
-        /* Footer */
-        .footer {
-            border-top: 1px solid hsl(var(--border));
-            padding: 2rem 0;
-            margin-top: 4rem;
-        }
-        
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 2rem;
-        }
-        
-        .footer-logo {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: hsl(var(--foreground));
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .footer-logo i {
-            color: hsl(var(--primary));
-            font-size: 1.8rem;
-        }
-        
-        .footer-section h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        
-        .footer-links {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .footer-link {
-            color: hsl(var(--muted-foreground));
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color var(--animation-duration) ease;
-        }
-        
-        .footer-link:hover {
-            color: hsl(var(--foreground));
-        }
-        
-        .footer-social {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .footer-social a {
-            color: hsl(var(--muted-foreground));
-            font-size: 1.2rem;
-            transition: color var(--animation-duration) ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background-color: hsl(var(--secondary));
-        }
-        
-        .footer-social a:hover {
-            color: hsl(var(--foreground));
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-        }
-        
-        .footer-bottom {
-            margin-top: 2rem;
-            text-align: center;
-            font-size: 0.8rem;
-            color: hsl(var(--muted-foreground));
-            padding-top: 2rem;
-            border-top: 1px solid hsl(var(--border));
-        }
-        
-        /* Admin panel lock */
-        .admin-link {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            box-shadow: var(--shadow);
-            transition: transform var(--animation-duration) ease, box-shadow var(--animation-duration) ease;
-            z-index: 10;
-            font-size: 1.2rem;
-        }
-        
-        .admin-link:hover {
-            transform: scale(1.1);
-            box-shadow: var(--shadow-md);
-        }
-        
-        /* Admin login modal */
-        .admin-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: hsla(var(--background) / 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            backdrop-filter: blur(8px);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity var(--animation-duration) ease;
-        }
-        
-        .admin-modal.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        
-        .admin-form {
-            background-color: hsl(var(--card));
-            border-radius: var(--radius);
-            padding: 2rem;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid hsl(var(--border));
-        }
-        
-        .admin-form h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-group label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: var(--radius);
-            border: 1px solid hsl(var(--border));
-            background-color: hsl(var(--background));
-            color: hsl(var(--foreground));
-            font-family: 'Outfit', sans-serif;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: hsl(var(--ring));
-            box-shadow: 0 0 0 2px hsla(var(--ring) / 0.2);
-        }
-        
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-        }
-        
-        /* Mobile nav */
-        .mobile-nav-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: hsl(var(--foreground));
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color var(--animation-duration) ease;
-        }
-        
-        .mobile-nav-toggle:hover {
-            background-color: hsl(var(--secondary));
-        }
-        
-        .mobile-nav {
-            position: fixed;
-            top: var(--header-height);
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: hsl(var(--background));
-            padding: 1.5rem;
-            transform: translateX(100%);
-            transition: transform var(--animation-duration) ease;
-            z-index: 40;
-            display: none;
-            border-top: 1px solid hsl(var(--border));
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .mobile-nav.show {
-            transform: translateX(0);
-        }
-        
-        .mobile-nav-links {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        
-        .mobile-nav-link {
-            color: hsl(var(--foreground));
-            text-decoration: none;
-            font-size: 1.2rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 0;
-        }
-        
-        .mobile-nav-link i {
-            font-size: 1.3rem;
-            width: 30px;
-        }
-        
-        .mobile-nav-link.active {
-            color: hsl(var(--primary));
-            font-weight: 600;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 1024px) {
-            .hero-title {
-                font-size: 2.5rem;
-            }
-            
-            .hero {
-                height: 450px;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .header-container {
-                justify-content: space-between;
-            }
-            
-            .mobile-nav-toggle {
-                display: flex;
-            }
-            
-            .nav {
-                display: none;
-            }
-            
-            .mobile-nav {
-                display: block;
-            }
-            
-            .hero {
-                height: 400px;
-            }
-            
-            .hero-title {
-                font-size: 2rem;
-            }
-            
-            .hero-content {
-                padding: 2rem;
-            }
-            
-            .search-container {
-                display: none;
-            }
-            
-            .mobile-search {
-                margin-top: 1.5rem;
-                margin-bottom: 1.5rem;
-            }
-            
-            .coming-soon {
-                padding: 2rem;
-            }
-            
-            .coming-soon h3 {
-                font-size: 1.2rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .hero {
-                height: 350px;
-            }
-            
-            .hero-title {
-                font-size: 1.5rem;
-            }
-            
-            .hero-info {
-                font-size: 0.8rem;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-            
-            .hero-dot {
-                display: none;
-            }
-            
-            .hero-buttons {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            
-            .grid-scroll {
-                grid-template-columns: repeat(2, 1fr);
-                grid-auto-columns: 50%;
-            }
-            
-            .coming-soon {
-                padding: 1.5rem;
-            }
-            
-            .footer-content {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        /* Loader */
-        .loader {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 3px solid hsl(var(--secondary));
-            border-radius: 50%;
-            border-top-color: hsl(var(--primary));
-            animation: spin 1s ease-in-out infinite;
-            margin: 2rem auto;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .loader-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 200px;
-        }
-        
-        /* Hidden elements */
-        .hidden {
-            display: none !important;
-        }
-        
-        /* Keepalive hidden iframe */
-        .keepalive-frame {
-            width: 0;
-            height: 0;
-            border: 0;
-            visibility: hidden;
-        }
-    </style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      transition: all 0.2s ease-in-out;
+    }
+    
+    .btn-primary {
+      background-color: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+    }
+    
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-secondary {
+      background-color: hsl(var(--secondary));
+      color: hsl(var(--secondary-foreground));
+    }
+    
+    .btn-secondary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-destructive {
+      background-color: hsl(var(--destructive));
+      color: hsl(var(--destructive-foreground));
+    }
+    
+    .btn-destructive:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-ghost {
+      background-color: transparent;
+      color: hsl(var(--foreground));
+    }
+    
+    .btn-ghost:hover {
+      background-color: hsl(var(--accent));
+      color: hsl(var(--accent-foreground));
+    }
+    
+    .input {
+      display: block;
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: var(--radius);
+      border: 1px solid hsl(var(--input));
+      background-color: transparent;
+      color: hsl(var(--foreground));
+    }
+    
+    .input:focus {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+    }
+    
+    .card {
+      background-color: hsl(var(--card));
+      color: hsl(var(--card-foreground));
+      border-radius: var(--radius);
+      border: 1px solid hsl(var(--border));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      padding: 1rem;
+      border-radius: var(--radius);
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+      border: 1px solid hsl(var(--border));
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      z-index: 50;
+      transform: translateY(100%);
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .toast-success {
+      border-left: 4px solid #22c55e;
+    }
+    
+    .toast-error {
+      border-left: 4px solid hsl(var(--destructive));
+    }
+    
+    .skeleton {
+      background-color: hsl(var(--muted));
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .skeleton::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      transform: translateX(-100%);
+      background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.2) 20%,
+        rgba(255, 255, 255, 0.5) 60%,
+        rgba(255, 255, 255, 0)
+      );
+      animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      100% {
+        transform: translateX(100%);
+      }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background-color: hsl(var(--muted-foreground) / 0.5);
+      border-radius: 20px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: hsl(var(--muted-foreground));
+    }
+  </style>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            border: "hsl(var(--border))",
+            input: "hsl(var(--input))",
+            ring: "hsl(var(--ring))",
+            background: "hsl(var(--background))",
+            foreground: "hsl(var(--foreground))",
+            primary: {
+              DEFAULT: "hsl(var(--primary))",
+              foreground: "hsl(var(--primary-foreground))",
+            },
+            secondary: {
+              DEFAULT: "hsl(var(--secondary))",
+              foreground: "hsl(var(--secondary-foreground))",
+            },
+            destructive: {
+              DEFAULT: "hsl(var(--destructive))",
+              foreground: "hsl(var(--destructive-foreground))",
+            },
+            muted: {
+              DEFAULT: "hsl(var(--muted))",
+              foreground: "hsl(var(--muted-foreground))",
+            },
+            accent: {
+              DEFAULT: "hsl(var(--accent))",
+              foreground: "hsl(var(--accent-foreground))",
+            },
+            popover: {
+              DEFAULT: "hsl(var(--popover))",
+              foreground: "hsl(var(--popover-foreground))",
+            },
+            card: {
+              DEFAULT: "hsl(var(--card))",
+              foreground: "hsl(var(--card-foreground))",
+            },
+          },
+          borderRadius: {
+            lg: "var(--radius)",
+            md: "calc(var(--radius) - 2px)",
+            sm: "calc(var(--radius) - 4px)",
+          },
+        },
+      },
+    };
+  </script>
 </head>
-<body class="dark">
-    <!-- Header -->
-    <header class="header">
-        <div class="container flex items-center justify-between h-full header-container">
-            <a href="/" class="logo">
-                <i class="ph ph-play-circle"></i>
-                <span>AnimeStream</span>
-            </a>
-            
-            <div class="search-container">
-                <i class="ph ph-magnifying-glass search-icon"></i>
-                <input type="text" id="search-input" class="search-input" placeholder="Search anime...">
-            </div>
-            
-            <nav class="nav">
-                <a href="#" class="nav-link active">Home</a>
-                <a href="#popular-section" class="nav-link">Popular</a>
-                <a href="#latest-section" class="nav-link">Latest</a>
-                <a href="#tagalog-section" class="nav-link">Tagalog Dub</a>
-                <a href="#upcoming-section" class="nav-link">Upcoming</a>
-            </nav>
-            
-            <button class="dark-mode-toggle" id="theme-toggle">
-                <i class="ph ph-sun"></i>
-            </button>
-            
-            <button class="mobile-nav-toggle" id="mobile-nav-toggle">
-                <i class="ph ph-list"></i>
-            </button>
-        </div>
-    </header>
-    
-    <!-- Mobile Navigation -->
-    <div class="mobile-nav" id="mobile-nav">
-        <div class="mobile-search">
-            <div class="search-container" style="max-width: 100%;">
-                <i class="ph ph-magnifying-glass search-icon"></i>
-                <input type="text" id="mobile-search-input" class="search-input" placeholder="Search anime...">
-            </div>
-        </div>
-        <div class="mobile-nav-links">
-            <a href="#" class="mobile-nav-link active">
-                <i class="ph ph-house"></i>
-                <span>Home</span>
-            </a>
-            <a href="#popular-section" class="mobile-nav-link">
-                <i class="ph ph-star"></i>
-                <span>Popular</span>
-            </a>
-            <a href="#latest-section" class="mobile-nav-link">
-                <i class="ph ph-clock"></i>
-                <span>Latest</span>
-            </a>
-            <a href="#tagalog-section" class="mobile-nav-link">
-                <i class="ph ph-microphone"></i>
-                <span>Tagalog Dub</span>
-            </a>
-            <a href="#upcoming-section" class="mobile-nav-link">
-                <i class="ph ph-calendar"></i>
-                <span>Upcoming</span>
-            </a>
-        </div>
+<body class="min-h-screen bg-background flex flex-col">
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+  
+  <!-- Mobile Nav Bar -->
+  <header class="md:hidden sticky top-0 z-30 bg-background border-b border-border p-4 flex items-center justify-between">
+    <div class="flex items-center">
+      <button id="mobile-menu-toggle" class="mr-2">
+        <i class="ph ph-list text-xl"></i>
+      </button>
+      <h1 class="text-lg font-semibold">Anime API Admin</h1>
     </div>
+    <button id="theme-toggle-mobile" class="btn btn-ghost p-2">
+      <i class="ph ph-moon text-xl"></i>
+    </button>
+  </header>
+  
+  <div class="flex flex-1 overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="hidden md:flex flex-col w-64 border-r border-border bg-card fixed md:relative inset-y-0 left-0 z-20 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+      <div class="p-4 border-b border-border flex items-center justify-between">
+        <h1 class="text-xl font-semibold">Anime API Admin</h1>
+        <button id="theme-toggle" class="btn btn-ghost p-1">
+          <i class="ph ph-moon text-lg"></i>
+        </button>
+      </div>
+      
+      <nav class="flex-1 p-4 overflow-y-auto">
+        <ul class="space-y-1">
+          <li>
+            <button data-section="dashboard" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
+              <i class="ph ph-chart-pie-slice mr-2"></i>
+              Dashboard
+            </button>
+          </li>
+          <li>
+            <button data-section="anime-list" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
+              <i class="ph ph-television mr-2"></i>
+              Anime List
+            </button>
+          </li>
+          <li>
+            <button data-section="add-anime" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
+              <i class="ph ph-plus-circle mr-2"></i>
+              Add Anime
+            </button>
+          </li>
+          <li>
+            <button data-section="episodes" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
+              <i class="ph ph-list-bullets mr-2"></i>
+              Episodes
+            </button>
+          </li>
+          <li>
+            <button data-section="add-episode" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
+              <i class="ph ph-plus mr-2"></i>
+              Add Episode
+            </button>
+          </li>
+          <li>
+            <button data-section="schedule" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
+              <i class="ph ph-calendar mr-2"></i>
+              Schedule
+            </button>
+          </li>
+          <li>
+            <button data-section="settings" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
+              <i class="ph ph-gear-six mr-2"></i>
+              Settings
+            </button>
+          </li>
+        </ul>
+      </nav>
+      
+      <div class="p-4 border-t border-border">
+        <button class="backup-btn btn btn-primary w-full">
+          <i class="ph ph-floppy-disk mr-2"></i>
+          Backup Data
+        </button>
+      </div>
+    </aside>
     
-    <main class="container mt-8">
-        <!-- Featured Anime Hero -->
-        <section id="featured-anime" class="hero">
-            <div class="loader-container" id="featured-loader">
-                <div class="loader"></div>
-            </div>
-            <div class="featured-content hidden" id="featured-content">
-                <img src="" alt="Featured Anime" class="hero-img" id="featured-img">
-                <div class="hero-gradient"></div>
-                <div class="hero-content">
-                    <h1 class="hero-title" id="featured-title"></h1>
-                    <div class="hero-info">
-                        <span id="featured-episodes"></span>
-                        <div class="hero-dot"></div>
-                        <span id="featured-rating"></span>
-                        <div class="hero-dot"></div>
-                        <span id="featured-genres"></span>
-                    </div>
-                    <div class="hero-buttons">
-                        <a href="" class="btn btn-primary" id="watch-btn">
-                            <i class="ph ph-play btn-icon"></i>
-                            Watch Now
-                        </a>
-                        <a href="" class="btn btn-outline" id="info-btn">
-                            <i class="ph ph-info btn-icon"></i>
-                            More Info
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto p-4 md:p-6">
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold">Dashboard</h2>
+          <div class="flex space-x-2">
+            <button class="refresh-stats-btn btn btn-secondary">
+              <i class="ph ph-arrows-clockwise mr-2"></i>
+              Refresh
+            </button>
+          </div>
+        </div>
         
-        <!-- Popular Anime Section -->
-        <section id="popular-section" class="mt-16">
-            <div class="section-title">
-                <h2><i class="ph ph-star"></i> Popular Anime</h2>
-                <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-muted-foreground">Total Anime</h3>
+              <i class="ph ph-television text-primary text-xl"></i>
             </div>
-            <div class="grid-scroll" id="popular-anime">
-                <div class="loader-container">
-                    <div class="loader"></div>
-                </div>
+            <p class="text-2xl font-bold mt-2" id="anime-count">0</p>
+          </div>
+          
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-muted-foreground">Total Episodes</h3>
+              <i class="ph ph-film-strip text-primary text-xl"></i>
             </div>
-        </section>
+            <p class="text-2xl font-bold mt-2" id="episode-count">0</p>
+          </div>
+          
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-muted-foreground">Tagalog Dubs</h3>
+              <i class="ph ph-translate text-primary text-xl"></i>
+            </div>
+            <p class="text-2xl font-bold mt-2" id="tagalog-count">0</p>
+          </div>
+          
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-muted-foreground">Scheduled</h3>
+              <i class="ph ph-calendar text-primary text-xl"></i>
+            </div>
+            <p class="text-2xl font-bold mt-2" id="scheduled-count">0</p>
+          </div>
+        </div>
         
-        <!-- Latest Episodes Section -->
-        <section id="latest-section" class="mt-16">
-            <div class="section-title">
-                <h2><i class="ph ph-clock"></i> Latest Episodes</h2>
-                <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card p-4">
+            <h3 class="text-lg font-medium mb-3">Recent Anime</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-border">
+                    <th class="text-left py-2 px-2">Title</th>
+                    <th class="text-left py-2 px-2">Episodes</th>
+                    <th class="text-left py-2 px-2">Date Added</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-anime-table">
+                  <tr>
+                    <td colspan="3" class="py-4 text-center text-muted-foreground">
+                      Loading anime data...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="grid-scroll" id="latest-episodes">
-                <div class="loader-container">
-                    <div class="loader"></div>
-                </div>
+          </div>
+          
+          <div class="card p-4">
+            <h3 class="text-lg font-medium mb-3">Recent Episodes</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-border">
+                    <th class="text-left py-2 px-2">Anime</th>
+                    <th class="text-left py-2 px-2">Episode</th>
+                    <th class="text-left py-2 px-2">Date Added</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-episodes-table">
+                  <tr>
+                    <td colspan="3" class="py-4 text-center text-muted-foreground">
+                      Loading episode data...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-        </section>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Anime List Section -->
+      <section id="anime-list" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 class="text-2xl font-bold">Anime List</h2>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative">
+              <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"></i>
+              <input type="text" id="anime-search" placeholder="Search anime..." class="input pl-9">
+            </div>
+            <button class="btn btn-primary" id="add-anime-btn">
+              <i class="ph ph-plus mr-2"></i>
+              Add Anime
+            </button>
+          </div>
+        </div>
         
-        <!-- Tagalog Dubbed Anime Section -->
-        <section id="tagalog-section" class="mt-16">
-            <div class="section-title">
-                <h2><i class="ph ph-microphone"></i> Tagalog Dubbed Anime</h2>
-                <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
-            </div>
-            <div class="grid-scroll" id="tagalog-anime">
-                <div class="loader-container">
-                    <div class="loader"></div>
-                </div>
-            </div>
-        </section>
+        <div class="card">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-border">
+                  <th class="text-left py-3 px-4">Title</th>
+                  <th class="text-left py-3 px-4 hidden sm:table-cell">Episodes</th>
+                  <th class="text-left py-3 px-4 hidden md:table-cell">Status</th>
+                  <th class="text-left py-3 px-4 hidden lg:table-cell">Tagalog</th>
+                  <th class="text-right py-3 px-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="anime-table">
+                <tr>
+                  <td colspan="5" class="py-4 text-center text-muted-foreground">
+                    Loading anime data...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Add Anime Section -->
+      <section id="add-anime" class="hidden space-y-6">
+        <h2 class="text-2xl font-bold">Add Anime</h2>
         
-        <!-- Upcoming Releases Section -->
-        <section id="upcoming-section" class="mt-16">
-            <div class="section-title">
-                <h2><i class="ph ph-calendar"></i> Upcoming Releases</h2>
-                <a href="#" class="view-all">View All <i class="ph ph-arrow-right"></i></a>
+        <div class="card p-6">
+          <div class="mb-4">
+            <label for="anime-search-input" class="block text-sm font-medium mb-1">Search AniList</label>
+            <div class="relative">
+              <input type="text" id="anime-search-input" placeholder="Search by title..." class="input">
+              <button id="search-anime-btn" class="absolute right-1 top-1/2 transform -translate-y-1/2 btn btn-primary py-1 px-2 text-sm">
+                <i class="ph ph-magnifying-glass mr-1"></i>
+                Search
+              </button>
             </div>
-            <div class="coming-soon">
-                <i class="ph ph-clock-countdown"></i>
-                <h3>Coming Soon</h3>
-                <p>We're currently working on our upcoming releases feature. Check back later for announcements about new anime and episodes!</p>
+          </div>
+          
+          <div id="search-results" class="hidden">
+            <h3 class="text-lg font-medium mb-3">Search Results</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="search-results-container">
+              <!-- Search results will be displayed here -->
             </div>
-        </section>
+          </div>
+        </div>
+        
+        <div id="anime-form-container" class="hidden card p-6">
+          <h3 class="text-lg font-medium mb-3">Add to Library</h3>
+          
+          <div id="selected-anime-preview" class="flex flex-col sm:flex-row gap-4 mb-4">
+            <div class="w-full sm:w-1/3 md:w-1/4">
+              <img id="preview-image" src="" alt="Anime Cover" class="w-full h-auto rounded-md">
+            </div>
+            <div class="flex-1">
+              <h3 id="preview-title" class="text-xl font-bold"></h3>
+              <p id="preview-info" class="text-sm text-muted-foreground mb-2"></p>
+              <p id="preview-description" class="text-sm line-clamp-4"></p>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="flex items-center text-sm font-medium">
+              <input type="checkbox" id="has-tagalog-dub" class="mr-2 rounded border-border">
+              Has Tagalog Dub
+            </label>
+          </div>
+          
+          <div class="flex justify-end">
+            <button id="cancel-add" class="btn btn-ghost mr-2">
+              Cancel
+            </button>
+            <button id="submit-add-anime" class="btn btn-primary">
+              <i class="ph ph-plus-circle mr-2"></i>
+              Add to Library
+            </button>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Episodes Section -->
+      <section id="episodes" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 class="text-2xl font-bold">Episodes</h2>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative">
+              <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"></i>
+              <input type="text" id="episode-search" placeholder="Search episodes..." class="input pl-9">
+            </div>
+            <button class="btn btn-primary" id="add-episode-btn">
+              <i class="ph ph-plus mr-2"></i>
+              Add Episode
+            </button>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-border">
+                  <th class="text-left py-3 px-4">Anime</th>
+                  <th class="text-left py-3 px-4">Episode</th>
+                  <th class="text-left py-3 px-4 hidden md:table-cell">Title</th>
+                  <th class="text-left py-3 px-4 hidden lg:table-cell">Tagalog</th>
+                  <th class="text-right py-3 px-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="episodes-table">
+                <tr>
+                  <td colspan="5" class="py-4 text-center text-muted-foreground">
+                    Loading episode data...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Add Episode Section -->
+      <section id="add-episode" class="hidden space-y-6">
+        <h2 class="text-2xl font-bold">Add Episode</h2>
+        
+        <div class="card p-6">
+          <form id="episode-form">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="episode-anime-select" class="block text-sm font-medium mb-1">Select Anime</label>
+                <select id="episode-anime-select" class="input">
+                  <option value="">Select an anime...</option>
+                </select>
+              </div>
+              
+              <div>
+                <label for="episode-number" class="block text-sm font-medium mb-1">Episode Number</label>
+                <input type="number" id="episode-number" placeholder="Episode number" class="input" min="1">
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label for="episode-title" class="block text-sm font-medium mb-1">Episode Title (Optional)</label>
+              <input type="text" id="episode-title" placeholder="Episode title" class="input">
+            </div>
+            
+            <div class="mb-4">
+              <label for="iframe-src" class="block text-sm font-medium mb-1">Primary Server (iframe src)</label>
+              <input type="text" id="iframe-src" placeholder="https://example.com/embed/..." class="input">
+            </div>
+            
+            <div class="mb-4">
+              <label for="server2-url" class="block text-sm font-medium mb-1">Secondary Server URL (Optional)</label>
+              <input type="text" id="server2-url" placeholder="https://example.com/video/..." class="input">
+            </div>
+            
+            <div class="mb-4">
+              <label class="flex items-center text-sm font-medium">
+                <input type="checkbox" id="episode-has-tagalog" class="mr-2 rounded border-border">
+                Has Tagalog Dub
+              </label>
+            </div>
+            
+            <div class="flex justify-end">
+              <button type="reset" class="btn btn-ghost mr-2">
+                Reset
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="ph ph-plus-circle mr-2"></i>
+                Add Episode
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+      
+      <!-- Schedule Section -->
+      <section id="schedule" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 class="text-2xl font-bold">Schedule</h2>
+          <button class="btn btn-primary" id="add-schedule-btn">
+            <i class="ph ph-plus mr-2"></i>
+            Add to Schedule
+          </button>
+        </div>
+        
+        <div class="card p-6" id="add-schedule-form" style="display: none;">
+          <h3 class="text-lg font-medium mb-3">Schedule New Release</h3>
+          
+          <form id="schedule-form">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="schedule-anime-select" class="block text-sm font-medium mb-1">Select Anime</label>
+                <select id="schedule-anime-select" class="input">
+                  <option value="">Select an anime...</option>
+                </select>
+              </div>
+              
+              <div>
+                <label for="release-date" class="block text-sm font-medium mb-1">Release Date</label>
+                <input type="date" id="release-date" class="input">
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label for="schedule-notes" class="block text-sm font-medium mb-1">Notes</label>
+              <textarea id="schedule-notes" rows="3" placeholder="Add notes about this release..." class="input"></textarea>
+            </div>
+            
+            <div class="mb-4">
+              <label class="flex items-center text-sm font-medium">
+                <input type="checkbox" id="schedule-has-tagalog" class="mr-2 rounded border-border">
+                Will have Tagalog Dub
+              </label>
+            </div>
+            
+            <div class="flex justify-end">
+              <button type="button" id="cancel-schedule" class="btn btn-ghost mr-2">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="ph ph-calendar-plus mr-2"></i>
+                Add to Schedule
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <div class="card">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-border">
+                  <th class="text-left py-3 px-4">Anime</th>
+                  <th class="text-left py-3 px-4">Release Date</th>
+                  <th class="text-left py-3 px-4 hidden md:table-cell">Notes</th>
+                  <th class="text-left py-3 px-4 hidden lg:table-cell">Tagalog</th>
+                  <th class="text-right py-3 px-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="schedule-table">
+                <tr>
+                  <td colspan="5" class="py-4 text-center text-muted-foreground">
+                    Loading schedule data...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Settings Section -->
+      <section id="settings" class="hidden space-y-6">
+        <h2 class="text-2xl font-bold">Settings</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="card p-6">
+            <h3 class="text-lg font-medium mb-3">Theme</h3>
+            <p class="text-sm text-muted-foreground mb-4">Customize the appearance of the admin panel.</p>
+            
+            <div class="flex flex-col gap-3">
+              <label class="flex items-center text-sm font-medium">
+                <input type="radio" name="theme" value="dark" checked class="mr-2">
+                Dark Theme
+              </label>
+              <label class="flex items-center text-sm font-medium">
+                <input type="radio" name="theme" value="light" class="mr-2">
+                Light Theme
+              </label>
+              <label class="flex items-center text-sm font-medium">
+                <input type="radio" name="theme" value="system" class="mr-2">
+                System Preference
+              </label>
+            </div>
+          </div>
+          
+          <div class="card p-6">
+            <h3 class="text-lg font-medium mb-3">Data Management</h3>
+            <p class="text-sm text-muted-foreground mb-4">Backup and restore your anime data.</p>
+            
+            <div class="flex flex-col gap-3">
+              <button class="btn btn-primary export-btn">
+                <i class="ph ph-download mr-2"></i>
+                Export Data
+              </button>
+              
+              <div class="relative">
+                <button class="btn btn-secondary w-full">
+                  <i class="ph ph-upload mr-2"></i>
+                  Import Data
+                </button>
+                <input type="file" id="import-file" accept=".json" class="absolute inset-0 opacity-0 cursor-pointer">
+              </div>
+              
+              <div class="mt-4">
+                <button class="btn btn-destructive w-full" id="clear-cache-btn">
+                  <i class="ph ph-trash mr-2"></i>
+                  Clear Cache
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
-    
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <div class="footer-logo">
-                        <i class="ph ph-play-circle"></i>
-                        <span>AnimeStream</span>
-                    </div>
-                    <p class="text-sm text-muted-foreground mb-4">Your ultimate destination for anime streaming with Tagalog dubbed content.</p>
-                    <div class="footer-social">
-                        <a href="#"><i class="ph ph-facebook-logo"></i></a>
-                        <a href="#"><i class="ph ph-twitter-logo"></i></a>
-                        <a href="#"><i class="ph ph-instagram-logo"></i></a>
-                        <a href="#"><i class="ph ph-discord-logo"></i></a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Quick Links</h3>
-                    <div class="footer-links">
-                        <a href="#" class="footer-link">Home</a>
-                        <a href="#popular-section" class="footer-link">Popular Anime</a>
-                        <a href="#latest-section" class="footer-link">Latest Episodes</a>
-                        <a href="#tagalog-section" class="footer-link">Tagalog Dub</a>
-                        <a href="#upcoming-section" class="footer-link">Upcoming Releases</a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Genres</h3>
-                    <div class="footer-links">
-                        <a href="#" class="footer-link">Action</a>
-                        <a href="#" class="footer-link">Romance</a>
-                        <a href="#" class="footer-link">Comedy</a>
-                        <a href="#" class="footer-link">Drama</a>
-                        <a href="#" class="footer-link">Fantasy</a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Legal</h3>
-                    <div class="footer-links">
-                        <a href="#" class="footer-link">Privacy Policy</a>
-                        <a href="#" class="footer-link">Terms of Service</a>
-                        <a href="#" class="footer-link">DMCA</a>
-                        <a href="#" class="footer-link">Contact Us</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>&copy; 2025 AnimeStream. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-    
-    <!-- Admin link -->
-    <a href="#" class="admin-link" id="admin-btn" title="Admin Panel">
-        <i class="ph ph-gear"></i>
-    </a>
-    
-    <!-- Admin login modal -->
-    <div class="admin-modal" id="admin-modal">
-        <div class="admin-form">
-            <h2>Admin Login</h2>
-            <div class="form-group">
-                <label for="admin-password">Password</label>
-                <input type="password" id="admin-password" class="form-input" placeholder="Enter password">
-            </div>
-            <div class="form-actions">
-                <button class="btn btn-secondary" id="admin-cancel">Cancel</button>
-                <button class="btn btn-primary" id="admin-login">Login</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Keepalive hidden iframe -->
-    <iframe src="/keepalive" class="keepalive-frame" title="keepalive"></iframe>
-    
-    <!-- Load JavaScript -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Fetch and display anime data
-            fetchAndDisplayAnime();
-            
-            // Setup event listeners
-            setupEventListeners();
-            
-            // Theme toggle
-            setupThemeToggle();
-            
-            // Mobile navigation
-            setupMobileNav();
-            
-            // Admin panel access
-            setupAdminAccess();
+  </div>
+  
+  <!-- Mobile Drawer Backdrop -->
+  <div id="mobile-backdrop" class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 hidden" style="transition: opacity 0.3s;"></div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Theme Toggle
+      const themeToggle = document.getElementById('theme-toggle');
+      const themeToggleMobile = document.getElementById('theme-toggle-mobile');
+      const htmlEl = document.documentElement;
+      
+      function toggleTheme() {
+        if (htmlEl.classList.contains('dark')) {
+          htmlEl.classList.remove('dark');
+          localStorage.setItem('theme', 'light');
+          themeToggle.innerHTML = '<i class="ph ph-sun text-lg"></i>';
+          themeToggleMobile.innerHTML = '<i class="ph ph-sun text-xl"></i>';
+        } else {
+          htmlEl.classList.add('dark');
+          localStorage.setItem('theme', 'dark');
+          themeToggle.innerHTML = '<i class="ph ph-moon text-lg"></i>';
+          themeToggleMobile.innerHTML = '<i class="ph ph-moon text-xl"></i>';
+        }
+      }
+      
+      themeToggle.addEventListener('click', toggleTheme);
+      themeToggleMobile.addEventListener('click', toggleTheme);
+      
+      // Apply saved theme
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        htmlEl.classList.remove('dark');
+        themeToggle.innerHTML = '<i class="ph ph-sun text-lg"></i>';
+        themeToggleMobile.innerHTML = '<i class="ph ph-sun text-xl"></i>';
+      }
+      
+      // Theme radio buttons
+      const themeRadios = document.querySelectorAll('input[name="theme"]');
+      themeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+          if (this.value === 'dark') {
+            htmlEl.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            themeToggle.innerHTML = '<i class="ph ph-moon text-lg"></i>';
+            themeToggleMobile.innerHTML = '<i class="ph ph-moon text-xl"></i>';
+          } else if (this.value === 'light') {
+            htmlEl.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            themeToggle.innerHTML = '<i class="ph ph-sun text-lg"></i>';
+            themeToggleMobile.innerHTML = '<i class="ph ph-sun text-xl"></i>';
+          } else {
+            // System preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+              htmlEl.classList.add('dark');
+              themeToggle.innerHTML = '<i class="ph ph-moon text-lg"></i>';
+              themeToggleMobile.innerHTML = '<i class="ph ph-moon text-xl"></i>';
+            } else {
+              htmlEl.classList.remove('dark');
+              themeToggle.innerHTML = '<i class="ph ph-sun text-lg"></i>';
+              themeToggleMobile.innerHTML = '<i class="ph ph-sun text-xl"></i>';
+            }
+            localStorage.setItem('theme', 'system');
+          }
+        });
+      });
+      
+      // Set initial radio button state
+      if (savedTheme === 'light') {
+        document.querySelector('input[name="theme"][value="light"]').checked = true;
+      } else if (savedTheme === 'system') {
+        document.querySelector('input[name="theme"][value="system"]').checked = true;
+      } else {
+        document.querySelector('input[name="theme"][value="dark"]').checked = true;
+      }
+      
+      // Mobile Menu Toggle
+      const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+      const sidebar = document.getElementById('sidebar');
+      const mobileBackdrop = document.getElementById('mobile-backdrop');
+      
+      function toggleMobileMenu() {
+        if (sidebar.classList.contains('translate-x-0')) {
+          sidebar.classList.remove('translate-x-0');
+          sidebar.classList.add('-translate-x-full');
+          mobileBackdrop.style.opacity = '0';
+          setTimeout(() => {
+            mobileBackdrop.classList.add('hidden');
+          }, 300);
+        } else {
+          sidebar.classList.remove('-translate-x-full');
+          sidebar.classList.add('translate-x-0');
+          mobileBackdrop.classList.remove('hidden');
+          setTimeout(() => {
+            mobileBackdrop.style.opacity = '1';
+          }, 10);
+        }
+      }
+      
+      mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+      mobileBackdrop.addEventListener('click', toggleMobileMenu);
+      
+      // Navigation
+      const sections = document.querySelectorAll('main > section');
+      const navLinks = document.querySelectorAll('.nav-link');
+      
+      function showSection(sectionId) {
+        sections.forEach(section => {
+          section.classList.add('hidden');
         });
         
-        // Fetch and display all anime data
-        function fetchAndDisplayAnime() {
-            // Fetch all anime
-            fetch('/api/anime')
-                .then(response => response.json())
-                .then(animeList => {
-                    displayFeaturedAnime(animeList);
-                    displayPopularAnime(animeList);
-                    displayLatestEpisodes();
-                })
-                .catch(error => console.error('Error fetching anime:', error));
-            
-            // Fetch tagalog dubbed anime
-            fetch('/api/anime/tagalog')
-                .then(response => response.json())
-                .then(tagalogAnime => {
-                    displayTagalogAnime(tagalogAnime);
-                })
-                .catch(error => console.error('Error fetching tagalog anime:', error));
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+          targetSection.classList.remove('hidden');
         }
         
-        // Display featured anime
-        function displayFeaturedAnime(animeList) {
-            if (!animeList || animeList.length === 0) return;
-            
-            // Sort by popularity and take the most popular one
-            const sortedAnime = [...animeList].sort((a, b) => b.popularity - a.popularity);
-            const featuredAnime = sortedAnime[0];
-            
-            const featuredLoader = document.getElementById('featured-loader');
-            const featuredContent = document.getElementById('featured-content');
-            
-            if (featuredAnime) {
-                document.getElementById('featured-img').src = featuredAnime.banner || featuredAnime.thumbnail;
-                document.getElementById('featured-title').textContent = featuredAnime.title;
-                document.getElementById('featured-episodes').textContent = `${featuredAnime.episodeCount} Episodes`;
-                document.getElementById('featured-rating').textContent = `${featuredAnime.rating}/10 Rating`;
-                document.getElementById('featured-genres').textContent = featuredAnime.genres.slice(0, 3).join(', ');
-                
-                // Set watch link
-                const watchBtn = document.getElementById('watch-btn');
-                watchBtn.href = `/watch.html?id=${featuredAnime.id}`;
-                
-                // Set info link
-                const infoBtn = document.getElementById('info-btn');
-                infoBtn.href = `/anime.html?id=${featuredAnime.id}`;
-                
-                // Hide loader and show content
-                featuredLoader.classList.add('hidden');
-                featuredContent.classList.remove('hidden');
-            }
+        // Update active link
+        navLinks.forEach(link => {
+          if (link.dataset.section === sectionId) {
+            link.classList.add('bg-secondary');
+          } else {
+            link.classList.remove('bg-secondary');
+          }
+        });
+        
+        // Close mobile menu after navigation
+        if (window.innerWidth < 768) {
+          toggleMobileMenu();
         }
         
-        // Display popular anime
-        function displayPopularAnime(animeList) {
-            if (!animeList || animeList.length === 0) return;
-            
-            const popularSection = document.getElementById('popular-anime');
-            popularSection.innerHTML = ''; // Clear loader
-            
-            // Sort by popularity and take top 12
-            const popularAnime = [...animeList]
-                .sort((a, b) => b.popularity - a.popularity)
-                .slice(0, 12);
-            
-            popularAnime.forEach(anime => {
-                const animeCard = createAnimeCard(anime);
-                popularSection.appendChild(animeCard);
-            });
-        }
+        // Save current section to localStorage
+        localStorage.setItem('currentSection', sectionId);
+      }
+      
+      navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          showSection(this.dataset.section);
+        });
+      });
+      
+      // Restore last visited section
+      const lastSection = localStorage.getItem('currentSection') || 'dashboard';
+      showSection(lastSection);
+      
+      // Show Add Anime section when Add Anime button is clicked
+      document.getElementById('add-anime-btn').addEventListener('click', function() {
+        showSection('add-anime');
+      });
+      
+      // Show Add Episode section when Add Episode button is clicked
+      document.getElementById('add-episode-btn').addEventListener('click', function() {
+        showSection('add-episode');
+      });
+      
+      // Toast Function
+      function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+          <div class="flex items-center">
+            <i class="ph ${type === 'success' ? 'ph-check-circle' : 'ph-x-circle'} text-lg mr-2"></i>
+            <span>${message}</span>
+          </div>
+        `;
         
-        // Display latest episodes
-        function displayLatestEpisodes() {
-            // Fetch all episodes
-            fetch('/api/episodes')
-                .then(response => response.json())
-                .then(episodes => {
-                    if (!episodes || episodes.length === 0) return;
-                    
-                    const latestSection = document.getElementById('latest-episodes');
-                    latestSection.innerHTML = ''; // Clear loader
-                    
-                    // Sort by date added (newest first) and take latest 12
-                    const latestEpisodes = [...episodes]
-                        .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
-                        .slice(0, 12);
-                    
-                    // Create a map to avoid duplicates
-                    const animeMap = new Map();
-                    
-                    // Process episodes and fetch anime details
-                    Promise.all(latestEpisodes.map(episode => 
-                        fetch(`/api/anime/${episode.animeId}`)
-                            .then(response => response.json())
-                            .then(anime => {
-                                // Only add if not already in map
-                                if (!animeMap.has(anime.id)) {
-                                    animeMap.set(anime.id, {
-                                        ...anime,
-                                        latestEpisode: episode.number
-                                    });
-                                }
-                            })
-                    ))
-                    .then(() => {
-                        // Convert map to array and display
-                        const latestAnime = Array.from(animeMap.values());
-                        
-                        latestAnime.forEach(anime => {
-                            const animeCard = createAnimeCard(anime, `Ep ${anime.latestEpisode}`);
-                            latestSection.appendChild(animeCard);
-                        });
-                    });
-                })
-                .catch(error => console.error('Error fetching episodes:', error));
-        }
+        toastContainer.appendChild(toast);
         
-        // Display tagalog dubbed anime
-        function displayTagalogAnime(tagalogAnime) {
-            if (!tagalogAnime || tagalogAnime.length === 0) return;
-            
-            const tagalogSection = document.getElementById('tagalog-anime');
-            tagalogSection.innerHTML = ''; // Clear loader
-            
-            // Take up to 12 tagalog dubbed anime
-            const displayedAnime = tagalogAnime.slice(0, 12);
-            
-            displayedAnime.forEach(anime => {
-                const animeCard = createAnimeCard(anime, 'Tagalog');
-                tagalogSection.appendChild(animeCard);
-            });
-        }
+        // Show the toast
+        setTimeout(() => {
+          toast.classList.add('show');
+        }, 10);
         
-        // Create anime card element
-        function createAnimeCard(anime, badge = null) {
-            const card = document.createElement('div');
-            card.className = 'anime-card';
-            
-            let badgeHTML = '';
-            if (anime.hasTagalogDub) {
-                badgeHTML = `<div class="anime-card-badge"><i class="ph ph-microphone"></i> Tagalog</div>`;
-            } else if (badge) {
-                if (badge.startsWith('Ep')) {
-                    badgeHTML = `<div class="anime-card-badge"><i class="ph ph-play"></i> ${badge}</div>`;
-                } else {
-                    badgeHTML = `<div class="anime-card-badge">${badge}</div>`;
-                }
-            }
-            
-            card.innerHTML = `
-                <div class="anime-card-thumb">
-                    <img src="${anime.thumbnail}" alt="${anime.title}" class="anime-card-img">
-                    ${badgeHTML}
-                </div>
-                <div class="anime-card-content">
-                    <h3 class="anime-card-title">${anime.title}</h3>
-                    <div class="anime-card-info">
-                        <span>${anime.episodeCount} eps</span>
-                        <span class="anime-card-rating">
-                            <i class="ph ph-star-fill"></i> ${anime.rating.toFixed(1)}
-                        </span>
-                    </div>
-                </div>
+        // Remove the toast after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => {
+            toastContainer.removeChild(toast);
+          }, 300);
+        }, 3000);
+      }
+      
+      // Fetch Dashboard Data
+      async function fetchDashboardData() {
+        try {
+          // Fetch anime count
+          const animeResponse = await fetch('/api/anime');
+          const animeData = await animeResponse.json();
+          document.getElementById('anime-count').textContent = animeData.length;
+          
+          // Count tagalog dubs
+          const tagalogCount = animeData.filter(anime => anime.hasTagalogDub).length;
+          document.getElementById('tagalog-count').textContent = tagalogCount;
+          
+          // Fetch episodes count
+          const episodesResponse = await fetch('/api/episodes');
+          const episodesData = await episodesResponse.json();
+          document.getElementById('episode-count').textContent = episodesData.length;
+          
+          // Fetch scheduled count
+          const scheduledResponse = await fetch('/api/scheduled');
+          const scheduledData = await scheduledResponse.json();
+          document.getElementById('scheduled-count').textContent = scheduledData.length;
+          
+          // Populate recent anime table
+          const recentAnimeTable = document.getElementById('recent-anime-table');
+          recentAnimeTable.innerHTML = '';
+          
+          // Sort anime by date added (newest first)
+          const sortedAnime = [...animeData].sort((a, b) => {
+            return new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0);
+          });
+          
+          const recentAnime = sortedAnime.slice(0, 5);
+          
+          if (recentAnime.length === 0) {
+            recentAnimeTable.innerHTML = `
+              <tr>
+                <td colspan="3" class="py-4 text-center text-muted-foreground">
+                  No anime found
+                </td>
+              </tr>
             `;
+          } else {
+            recentAnime.forEach(anime => {
+              const episodeCount = episodesData.filter(episode => episode.animeId === anime.id).length;
+              const tr = document.createElement('tr');
+              tr.className = 'border-b border-border';
+              tr.innerHTML = `
+                <td class="py-2 px-2">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 rounded overflow-hidden mr-2">
+                      <img src="${anime.thumbnail || 'https://via.placeholder.com/80'}" alt="${anime.title}" class="w-full h-full object-cover">
+                    </div>
+                    <span class="font-medium truncate" style="max-width: 160px;">${anime.title}</span>
+                  </div>
+                </td>
+                <td class="py-2 px-2">${episodeCount}</td>
+                <td class="py-2 px-2">${anime.dateAdded ? new Date(anime.dateAdded).toLocaleDateString() : 'Unknown'}</td>
+              `;
+              recentAnimeTable.appendChild(tr);
+            });
+          }
+          
+          // Populate recent episodes table
+          const recentEpisodesTable = document.getElementById('recent-episodes-table');
+          recentEpisodesTable.innerHTML = '';
+          
+          // Sort episodes by date added (newest first)
+          const sortedEpisodes = [...episodesData].sort((a, b) => {
+            return new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0);
+          });
+          
+          const recentEpisodes = sortedEpisodes.slice(0, 5);
+          
+          if (recentEpisodes.length === 0) {
+            recentEpisodesTable.innerHTML = `
+              <tr>
+                <td colspan="3" class="py-4 text-center text-muted-foreground">
+                  No episodes found
+                </td>
+              </tr>
+            `;
+          } else {
+            for (const episode of recentEpisodes) {
+              // Find the anime for this episode
+              const animeInfo = animeData.find(anime => anime.id === episode.animeId) || { title: 'Unknown Anime' };
+              
+              const tr = document.createElement('tr');
+              tr.className = 'border-b border-border';
+              tr.innerHTML = `
+                <td class="py-2 px-2 truncate" style="max-width: 160px;">${animeInfo.title}</td>
+                <td class="py-2 px-2">Episode ${episode.number}</td>
+                <td class="py-2 px-2">${episode.dateAdded ? new Date(episode.dateAdded).toLocaleDateString() : 'Unknown'}</td>
+              `;
+              recentEpisodesTable.appendChild(tr);
+            }
+          }
+          
+          // Populate anime selects
+          const animeSelects = document.querySelectorAll('#episode-anime-select, #schedule-anime-select');
+          animeSelects.forEach(select => {
+            // Save current value
+            const currentValue = select.value;
             
-            // Add click event
-            card.addEventListener('click', function() {
-                window.location.href = `/watch.html?id=${anime.id}`;
+            // Clear options except the first one
+            select.innerHTML = '<option value="">Select an anime...</option>';
+            
+            // Sort anime by title
+            const sortedForSelect = [...animeData].sort((a, b) => a.title.localeCompare(b.title));
+            
+            // Add anime options
+            sortedForSelect.forEach(anime => {
+              const option = document.createElement('option');
+              option.value = anime.id;
+              option.textContent = anime.title;
+              select.appendChild(option);
             });
             
-            return card;
+            // Restore selected value if it exists
+            if (currentValue) {
+              select.value = currentValue;
+            }
+          });
+          
+        } catch (error) {
+          console.error('Error fetching dashboard data:', error);
+          showToast('Failed to fetch dashboard data', 'error');
         }
-        
-        // Setup event listeners
-        function setupEventListeners() {
-            // Search functionality
-            document.getElementById('search-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const searchQuery = this.value.trim();
-                    if (searchQuery.length === 0) return;
-                    
-                    window.location.href = `/search.html?q=${encodeURIComponent(searchQuery)}`;
-                }
-            });
+      }
+      
+      // Fetch and populate anime list table
+      async function fetchAnimeList() {
+        try {
+          const animeTable = document.getElementById('anime-table');
+          animeTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Loading anime data...</td></tr>';
+          
+          const response = await fetch('/api/anime');
+          const animeData = await response.json();
+          
+          // Get episode counts for each anime
+          const episodesResponse = await fetch('/api/episodes');
+          const episodesData = await episodesResponse.json();
+          
+          // Process anime data
+          animeTable.innerHTML = '';
+          
+          if (animeData.length === 0) {
+            animeTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">No anime found</td></tr>';
+            return;
+          }
+          
+          animeData.forEach(anime => {
+            const episodeCount = episodesData.filter(episode => episode.animeId === anime.id).length;
             
-            // Mobile search
-            document.getElementById('mobile-search-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const searchQuery = this.value.trim();
-                    if (searchQuery.length === 0) return;
-                    
-                    window.location.href = `/search.html?q=${encodeURIComponent(searchQuery)}`;
-                }
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-border';
+            tr.innerHTML = `
+              <td class="py-3 px-4">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded overflow-hidden mr-2">
+                    <img src="${anime.thumbnail || 'https://via.placeholder.com/80'}" alt="${anime.title}" class="w-full h-full object-cover">
+                  </div>
+                  <div>
+                    <div class="font-medium">${anime.title}</div>
+                    <div class="text-xs text-muted-foreground">${anime.titleRomaji || ''}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 px-4 hidden sm:table-cell">${episodeCount} / ${anime.episodeCount}</td>
+              <td class="py-3 px-4 hidden md:table-cell">${anime.status || 'Unknown'}</td>
+              <td class="py-3 px-4 hidden lg:table-cell">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs ${anime.hasTagalogDub ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}">
+                  ${anime.hasTagalogDub ? 'Yes' : 'No'}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-foreground view-episodes-btn" data-id="${anime.id}" title="View Episodes">
+                    <i class="ph ph-list"></i>
+                  </button>
+                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-foreground add-episode-for-anime-btn" data-id="${anime.id}" data-title="${anime.title}" title="Add Episode">
+                    <i class="ph ph-plus"></i>
+                  </button>
+                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-destructive delete-anime-btn" data-id="${anime.id}" title="Delete Anime">
+                    <i class="ph ph-trash"></i>
+                  </button>
+                </div>
+              </td>
+            `;
+            animeTable.appendChild(tr);
+          });
+          
+          // Add event listeners to action buttons
+          const viewEpisodesBtns = document.querySelectorAll('.view-episodes-btn');
+          viewEpisodesBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+              const animeId = this.dataset.id;
+              // Navigate to episodes section and filter for this anime
+              showSection('episodes');
+              // TODO: Implement filtering
             });
-        }
-        
-        // Setup theme toggle
-        function setupThemeToggle() {
-            const themeToggle = document.getElementById('theme-toggle');
-            const html = document.documentElement;
+          });
+          
+          const addEpisodeForAnimeBtns = document.querySelectorAll('.add-episode-for-anime-btn');
+          addEpisodeForAnimeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+              const animeId = this.dataset.id;
+              const animeTitle = this.dataset.title;
+              
+              // Navigate to add episode section
+              showSection('add-episode');
+              
+              // Pre-select the anime in the dropdown
+              document.getElementById('episode-anime-select').value = animeId;
+            });
+          });
+          
+          const deleteAnimeBtns = document.querySelectorAll('.delete-anime-btn');
+          deleteAnimeBtns.forEach(btn => {
+            btn.addEventListener('click', async function() {
+              const animeId = this.dataset.id;
+              
+              if (confirm('Are you sure you want to delete this anime? This will also delete all episodes associated with it.')) {
+                try {
+                  const response = await fetch(`/api/anime/${animeId}`, {
+                    method: 'DELETE'
+                  });
+                  
+                  if (response.ok) {
+                    showToast('Anime deleted successfully');
+                    fetchAnimeList();
+                    fetchDashboardData();
+                  } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to delete anime', 'error');
+                  }
+                } catch (error) {
+                  console.error('Error deleting anime:', error);
+                  showToast('Failed to delete anime', 'error');
+                }
+              }
+            });
+          });
+          
+          // Add search functionality
+          const animeSearch = document.getElementById('anime-search');
+          animeSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = animeTable.querySelectorAll('tr');
             
-            // Check for saved theme preference
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                if (savedTheme === 'light') {
-                    html.classList.remove('dark');
-                    themeToggle.innerHTML = '<i class="ph ph-moon"></i>';
+            rows.forEach(row => {
+              if (row.cells && row.cells.length > 0) {
+                const title = row.cells[0].textContent.toLowerCase();
+                if (title.includes(searchTerm)) {
+                  row.style.display = '';
                 } else {
-                    html.classList.add('dark');
-                    themeToggle.innerHTML = '<i class="ph ph-sun"></i>';
+                  row.style.display = 'none';
                 }
+              }
+            });
+          });
+          
+        } catch (error) {
+          console.error('Error fetching anime list:', error);
+          const animeTable = document.getElementById('anime-table');
+          animeTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Error loading anime data</td></tr>';
+          showToast('Failed to fetch anime list', 'error');
+        }
+      }
+      
+      // Fetch and populate episodes table
+      async function fetchEpisodes() {
+        try {
+          const episodesTable = document.getElementById('episodes-table');
+          episodesTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Loading episode data...</td></tr>';
+          
+          const [episodesResponse, animeResponse] = await Promise.all([
+            fetch('/api/episodes'),
+            fetch('/api/anime')
+          ]);
+          
+          const [episodesData, animeData] = await Promise.all([
+            episodesResponse.json(),
+            animeResponse.json()
+          ]);
+          
+          // Create a map of anime IDs to titles for faster lookup
+          const animeMap = {};
+          animeData.forEach(anime => {
+            animeMap[anime.id] = {
+              title: anime.title,
+              thumbnail: anime.thumbnail
+            };
+          });
+          
+          // Process episodes data
+          episodesTable.innerHTML = '';
+          
+          if (episodesData.length === 0) {
+            episodesTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">No episodes found</td></tr>';
+            return;
+          }
+          
+          // Sort episodes by anime title, then by episode number
+          const sortedEpisodes = [...episodesData].sort((a, b) => {
+            const animeA = animeMap[a.animeId]?.title || '';
+            const animeB = animeMap[b.animeId]?.title || '';
+            
+            if (animeA !== animeB) {
+              return animeA.localeCompare(animeB);
             }
             
-            // Toggle theme
-            themeToggle.addEventListener('click', function() {
-                if (html.classList.contains('dark')) {
-                    html.classList.remove('dark');
-                    localStorage.setItem('theme', 'light');
-                    this.innerHTML = '<i class="ph ph-moon"></i>';
-                } else {
-                    html.classList.add('dark');
-                    localStorage.setItem('theme', 'dark');
-                    this.innerHTML = '<i class="ph ph-sun"></i>';
+            return a.number - b.number;
+          });
+          
+          sortedEpisodes.forEach(episode => {
+            const animeInfo = animeMap[episode.animeId] || { title: 'Unknown Anime', thumbnail: 'https://via.placeholder.com/80' };
+            
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-border';
+            tr.innerHTML = `
+              <td class="py-3 px-4">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded overflow-hidden mr-2">
+                    <img src="${animeInfo.thumbnail}" alt="${animeInfo.title}" class="w-full h-full object-cover">
+                  </div>
+                  <span class="truncate" style="max-width: 140px;">${animeInfo.title}</span>
+                </div>
+              </td>
+              <td class="py-3 px-4">
+                Episode ${episode.number}
+              </td>
+              <td class="py-3 px-4 hidden md:table-cell truncate" style="max-width: 160px;">
+                ${episode.title || `Episode ${episode.number}`}
+              </td>
+              <td class="py-3 px-4 hidden lg:table-cell">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs ${episode.hasTagalogDub ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}">
+                  ${episode.hasTagalogDub ? 'Yes' : 'No'}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-foreground edit-episode-btn" data-id="${episode.id}" title="Edit Episode">
+                    <i class="ph ph-pencil"></i>
+                  </button>
+                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-destructive delete-episode-btn" data-id="${episode.id}" title="Delete Episode">
+                    <i class="ph ph-trash"></i>
+                  </button>
+                </div>
+              </td>
+            `;
+            episodesTable.appendChild(tr);
+          });
+          
+          // Add event listeners to action buttons
+          const deleteEpisodeBtns = document.querySelectorAll('.delete-episode-btn');
+          deleteEpisodeBtns.forEach(btn => {
+            btn.addEventListener('click', async function() {
+              const episodeId = this.dataset.id;
+              
+              if (confirm('Are you sure you want to delete this episode?')) {
+                try {
+                  const response = await fetch(`/api/episodes/${episodeId}`, {
+                    method: 'DELETE'
+                  });
+                  
+                  if (response.ok) {
+                    showToast('Episode deleted successfully');
+                    fetchEpisodes();
+                    fetchDashboardData();
+                  } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to delete episode', 'error');
+                  }
+                } catch (error) {
+                  console.error('Error deleting episode:', error);
+                  showToast('Failed to delete episode', 'error');
                 }
+              }
             });
+          });
+          
+          // Add search functionality
+          const episodeSearch = document.getElementById('episode-search');
+          episodeSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = episodesTable.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+              if (row.cells && row.cells.length > 0) {
+                const animeTitle = row.cells[0].textContent.toLowerCase();
+                const episodeTitle = row.cells.length > 2 ? row.cells[2].textContent.toLowerCase() : '';
+                
+                if (animeTitle.includes(searchTerm) || episodeTitle.includes(searchTerm)) {
+                  row.style.display = '';
+                } else {
+                  row.style.display = 'none';
+                }
+              }
+            });
+          });
+          
+        } catch (error) {
+          console.error('Error fetching episodes:', error);
+          const episodesTable = document.getElementById('episodes-table');
+          episodesTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Error loading episode data</td></tr>';
+          showToast('Failed to fetch episodes', 'error');
+        }
+      }
+      
+      // Fetch and populate schedule table
+      async function fetchSchedule() {
+        try {
+          const scheduleTable = document.getElementById('schedule-table');
+          scheduleTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Loading schedule data...</td></tr>';
+          
+          const response = await fetch('/api/scheduled');
+          const scheduleData = await response.json();
+          
+          // Process schedule data
+          scheduleTable.innerHTML = '';
+          
+          if (scheduleData.length === 0) {
+            scheduleTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">No scheduled releases found</td></tr>';
+            return;
+          }
+          
+          // Sort by release date (upcoming first)
+          const sortedSchedule = [...scheduleData].sort((a, b) => {
+            return new Date(a.releaseDate) - new Date(b.releaseDate);
+          });
+          
+          sortedSchedule.forEach(item => {
+            const releaseDate = new Date(item.releaseDate);
+            const isUpcoming = releaseDate > new Date();
+            
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-border';
+            tr.innerHTML = `
+              <td class="py-3 px-4">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded overflow-hidden mr-2">
+                    <img src="${item.thumbnail || 'https://via.placeholder.com/80'}" alt="${item.title}" class="w-full h-full object-cover">
+                  </div>
+                  <span class="truncate" style="max-width: 140px;">${item.title}</span>
+                </div>
+              </td>
+              <td class="py-3 px-4">
+                <div class="${isUpcoming ? 'text-primary font-medium' : 'text-muted-foreground'}">
+                  ${releaseDate.toLocaleDateString()}
+                </div>
+                <div class="text-xs text-muted-foreground">
+                  ${isUpcoming ? 'Upcoming' : 'Released'}
+                </div>
+              </td>
+              <td class="py-3 px-4 hidden md:table-cell truncate" style="max-width: 160px;">
+                ${item.notes || 'No notes'}
+              </td>
+              <td class="py-3 px-4 hidden lg:table-cell">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs ${item.hasTagalogDub ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}">
+                  ${item.hasTagalogDub ? 'Yes' : 'No'}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  ${isUpcoming ? `
+                    <button class="btn btn-ghost p-1 text-muted-foreground hover:text-primary add-episode-from-schedule-btn" data-id="${item.id}" data-anime-id="${item.animeId}" title="Add Episode">
+                      <i class="ph ph-plus"></i>
+                    </button>
+                  ` : ''}
+                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-destructive delete-schedule-btn" data-id="${item.id}" title="Delete">
+                    <i class="ph ph-trash"></i>
+                  </button>
+                </div>
+              </td>
+            `;
+            scheduleTable.appendChild(tr);
+          });
+          
+          // Add event listeners to action buttons
+          const deleteScheduleBtns = document.querySelectorAll('.delete-schedule-btn');
+          deleteScheduleBtns.forEach(btn => {
+            btn.addEventListener('click', async function() {
+              const scheduleId = this.dataset.id;
+              
+              if (confirm('Are you sure you want to delete this scheduled item?')) {
+                try {
+                  const response = await fetch(`/api/scheduled/${scheduleId}`, {
+                    method: 'DELETE'
+                  });
+                  
+                  if (response.ok) {
+                    showToast('Scheduled item deleted successfully');
+                    fetchSchedule();
+                    fetchDashboardData();
+                  } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to delete scheduled item', 'error');
+                  }
+                } catch (error) {
+                  console.error('Error deleting scheduled item:', error);
+                  showToast('Failed to delete scheduled item', 'error');
+                }
+              }
+            });
+          });
+          
+          const addEpisodeFromScheduleBtns = document.querySelectorAll('.add-episode-from-schedule-btn');
+          addEpisodeFromScheduleBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+              const animeId = this.dataset.animeId;
+              
+              // Navigate to add episode section
+              showSection('add-episode');
+              
+              // Pre-select the anime in the dropdown
+              document.getElementById('episode-anime-select').value = animeId;
+            });
+          });
+          
+        } catch (error) {
+          console.error('Error fetching schedule:', error);
+          const scheduleTable = document.getElementById('schedule-table');
+          scheduleTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Error loading schedule data</td></tr>';
+          showToast('Failed to fetch schedule', 'error');
+        }
+      }
+      
+      // Refresh stats button
+      document.querySelector('.refresh-stats-btn').addEventListener('click', function() {
+        fetchDashboardData();
+        showToast('Dashboard data refreshed');
+      });
+      
+      // Anime search functionality (AniList)
+      document.getElementById('search-anime-btn').addEventListener('click', async function() {
+        const searchInput = document.getElementById('anime-search-input');
+        const searchTerm = searchInput.value.trim();
+        
+        if (searchTerm.length < 3) {
+          showToast('Please enter at least 3 characters for search', 'error');
+          return;
         }
         
-        // Setup mobile navigation
-        function setupMobileNav() {
-            const mobileNavToggle = document.getElementById('mobile-nav-toggle');
-            const mobileNav = document.getElementById('mobile-nav');
-            const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
-            
-            mobileNavToggle.addEventListener('click', function() {
-                mobileNav.classList.toggle('show');
+        try {
+          document.getElementById('search-results').classList.remove('hidden');
+          const searchResultsContainer = document.getElementById('search-results-container');
+          searchResultsContainer.innerHTML = '<div class="p-4 text-center text-muted-foreground">Searching...</div>';
+          
+          const response = await fetch(`/api/search?query=${encodeURIComponent(searchTerm)}`);
+          const searchResults = await response.json();
+          
+          if (searchResults.length === 0) {
+            searchResultsContainer.innerHTML = '<div class="p-4 text-center text-muted-foreground">No results found</div>';
+            return;
+          }
+          
+          searchResultsContainer.innerHTML = '';
+          
+          searchResults.forEach(anime => {
+            const card = document.createElement('div');
+            card.className = 'card overflow-hidden';
+            card.innerHTML = `
+              <div class="relative pb-[140%]">
+                <img src="${anime.thumbnail || 'https://via.placeholder.com/225x320'}" alt="${anime.title}" class="absolute inset-0 w-full h-full object-cover">
+              </div>
+              <div class="p-3">
+                <h4 class="font-medium truncate" title="${anime.title}">${anime.title}</h4>
+                <div class="text-xs text-muted-foreground mt-1 mb-2">${anime.titleRomaji || ''}</div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs bg-secondary rounded px-2 py-1">${anime.status}</span>
+                  <button class="btn btn-primary py-1 px-2 text-xs select-anime-btn" data-id="${anime.id}">
+                    <i class="ph ph-plus mr-1"></i>
+                    Select
+                  </button>
+                </div>
+              </div>
+            `;
+            searchResultsContainer.appendChild(card);
+          });
+          
+          // Add event listeners to select buttons
+          const selectButtons = document.querySelectorAll('.select-anime-btn');
+          selectButtons.forEach(btn => {
+            btn.addEventListener('click', async function() {
+              const animeId = this.dataset.id;
+              
+              try {
+                document.getElementById('anime-form-container').classList.remove('hidden');
+                document.getElementById('search-results').classList.add('hidden');
                 
-                // Toggle icon
-                if (mobileNav.classList.contains('show')) {
-                    this.innerHTML = '<i class="ph ph-x"></i>';
-                } else {
-                    this.innerHTML = '<i class="ph ph-list"></i>';
+                // Fetch detailed anime info
+                const response = await fetch(`/api/anime/${animeId}`);
+                const animeData = await response.json();
+                
+                // Populate preview
+                document.getElementById('preview-image').src = animeData.thumbnail || 'https://via.placeholder.com/225x320';
+                document.getElementById('preview-title').textContent = animeData.title;
+                
+                let infoText = `${animeData.status} • ${animeData.episodeCount} episodes`;
+                if (animeData.genres && animeData.genres.length > 0) {
+                  infoText += ` • ${animeData.genres.slice(0, 3).join(', ')}`;
                 }
+                document.getElementById('preview-info').textContent = infoText;
+                
+                document.getElementById('preview-description').textContent = animeData.description || 'No description available';
+                
+                // Store the anime ID for form submission
+                document.getElementById('submit-add-anime').dataset.id = animeId;
+                
+              } catch (error) {
+                console.error('Error fetching anime details:', error);
+                showToast('Failed to fetch anime details', 'error');
+              }
             });
+          });
+          
+        } catch (error) {
+          console.error('Error searching anime:', error);
+          document.getElementById('search-results-container').innerHTML = '<div class="p-4 text-center text-muted-foreground">Error searching anime</div>';
+          showToast('Failed to search anime', 'error');
+        }
+      });
+      
+      // Cancel add anime button
+      document.getElementById('cancel-add').addEventListener('click', function() {
+        document.getElementById('anime-form-container').classList.add('hidden');
+        document.getElementById('search-results').classList.remove('hidden');
+      });
+      
+      // Submit add anime form
+      document.getElementById('submit-add-anime').addEventListener('click', async function() {
+        const animeId = this.dataset.id;
+        const hasTagalogDub = document.getElementById('has-tagalog-dub').checked;
+        
+        try {
+          const response = await fetch('/api/anime', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              anilistId: animeId,
+              hasTagalogDub
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            showToast(`Added ${data.title} to library`);
             
-            // Close mobile nav when clicking a link
-            mobileNavLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    mobileNav.classList.remove('show');
-                    mobileNavToggle.innerHTML = '<i class="ph ph-list"></i>';
+            // Reset form
+            document.getElementById('anime-search-input').value = '';
+            document.getElementById('has-tagalog-dub').checked = false;
+            document.getElementById('anime-form-container').classList.add('hidden');
+            document.getElementById('search-results').classList.add('hidden');
+            
+            // Refresh data
+            fetchAnimeList();
+            fetchDashboardData();
+          } else {
+            const data = await response.json();
+            showToast(data.error || 'Failed to add anime', 'error');
+          }
+        } catch (error) {
+          console.error('Error adding anime:', error);
+          showToast('Failed to add anime', 'error');
+        }
+      });
+      
+      // Episode form submission
+      document.getElementById('episode-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const animeId = document.getElementById('episode-anime-select').value;
+        const number = document.getElementById('episode-number').value;
+        const title = document.getElementById('episode-title').value;
+        const iframeSrc = document.getElementById('iframe-src').value;
+        const server2Url = document.getElementById('server2-url').value;
+        const hasTagalogDub = document.getElementById('episode-has-tagalog').checked;
+        
+        if (!animeId) {
+          showToast('Please select an anime', 'error');
+          return;
+        }
+        
+        if (!number) {
+          showToast('Please enter an episode number', 'error');
+          return;
+        }
+        
+        if (!iframeSrc) {
+          showToast('Please enter a primary server URL', 'error');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/api/episodes', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              animeId,
+              number: parseInt(number),
+              title,
+              iframeSrc,
+              server2Url,
+              hasTagalogDub
+            })
+          });
+          
+          if (response.ok) {
+            showToast('Episode added successfully');
+            
+            // Reset form
+            this.reset();
+            
+            // Refresh data
+            fetchEpisodes();
+            fetchDashboardData();
+          } else {
+            const data = await response.json();
+            showToast(data.error || 'Failed to add episode', 'error');
+          }
+        } catch (error) {
+          console.error('Error adding episode:', error);
+          showToast('Failed to add episode', 'error');
+        }
+      });
+      
+      // Schedule form visibility toggle
+      document.getElementById('add-schedule-btn').addEventListener('click', function() {
+        const formContainer = document.getElementById('add-schedule-form');
+        formContainer.style.display = formContainer.style.display === 'none' ? 'block' : 'none';
+      });
+      
+      document.getElementById('cancel-schedule').addEventListener('click', function() {
+        document.getElementById('add-schedule-form').style.display = 'none';
+      });
+      
+      // Schedule form submission
+      document.getElementById('schedule-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const animeId = document.getElementById('schedule-anime-select').value;
+        const releaseDate = document.getElementById('release-date').value;
+        const notes = document.getElementById('schedule-notes').value;
+        const hasTagalogDub = document.getElementById('schedule-has-tagalog').checked;
+        
+        if (!animeId) {
+          showToast('Please select an anime', 'error');
+          return;
+        }
+        
+        if (!releaseDate) {
+          showToast('Please enter a release date', 'error');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/api/scheduled', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              anilistId: animeId,
+              releaseDate,
+              notes,
+              hasTagalogDub
+            })
+          });
+          
+          if (response.ok) {
+            showToast('Added to schedule successfully');
+            
+            // Reset form
+            this.reset();
+            document.getElementById('add-schedule-form').style.display = 'none';
+            
+            // Refresh data
+            fetchSchedule();
+            fetchDashboardData();
+          } else {
+            const data = await response.json();
+            showToast(data.error || 'Failed to add to schedule', 'error');
+          }
+        } catch (error) {
+          console.error('Error adding to schedule:', error);
+          showToast('Failed to add to schedule', 'error');
+        }
+      });
+      
+      // Export data button
+      document.querySelector('.export-btn').addEventListener('click', async function() {
+        try {
+          const response = await fetch('/api/export');
+          const data = await response.json();
+          
+          // Create a JSON blob and download it
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `anime_backup_${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          
+          showToast('Data exported successfully');
+        } catch (error) {
+          console.error('Error exporting data:', error);
+          showToast('Failed to export data', 'error');
+        }
+      });
+      
+      // Import data functionality
+      document.getElementById('import-file').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          try {
+            const contents = e.target.result;
+            const data = JSON.parse(contents);
+            
+            if (!data.anime || !data.episodes || !Array.isArray(data.anime) || !Array.isArray(data.episodes)) {
+              showToast('Invalid backup file format', 'error');
+              return;
+            }
+            
+            if (confirm(`Are you sure you want to import this data? This will overwrite your current data.\n\nAnime: ${data.anime.length}\nEpisodes: ${data.episodes.length}\nScheduled: ${data.scheduled ? data.scheduled.length : 0}`)) {
+              try {
+                const response = await fetch('/api/import', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
                 });
-            });
-        }
-        
-        // Setup admin access
-        function setupAdminAccess() {
-            const adminBtn = document.getElementById('admin-btn');
-            const adminModal = document.getElementById('admin-modal');
-            const adminCancel = document.getElementById('admin-cancel');
-            const adminLogin = document.getElementById('admin-login');
-            const adminPassword = document.getElementById('admin-password');
-            
-            // Show admin modal
-            adminBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                adminModal.classList.add('show');
-                adminPassword.focus();
-            });
-            
-            // Hide admin modal
-            adminCancel.addEventListener('click', function() {
-                adminModal.classList.remove('show');
-                adminPassword.value = '';
-            });
-            
-            // Login
-            adminLogin.addEventListener('click', function() {
-                const password = adminPassword.value;
                 
-                if (password === 'XaneKath1') {
-                    window.location.href = '/animestream.html';
+                if (response.ok) {
+                  const result = await response.json();
+                  showToast(`Data imported successfully! Anime: ${result.counts.anime}, Episodes: ${result.counts.episodes}`);
+                  
+                  // Refresh all data
+                  fetchDashboardData();
+                  fetchAnimeList();
+                  fetchEpisodes();
+                  fetchSchedule();
                 } else {
-                    alert('Incorrect password!');
-                    adminPassword.value = '';
-                    adminPassword.focus();
+                  const errorData = await response.json();
+                  showToast(errorData.error || 'Failed to import data', 'error');
                 }
-            });
-            
-            // Login on Enter key
-            adminPassword.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    adminLogin.click();
-                }
-            });
+              } catch (error) {
+                console.error('Error importing data:', error);
+                showToast('Failed to import data', 'error');
+              }
+            }
+          } catch (error) {
+            console.error('Error parsing JSON:', error);
+            showToast('Invalid JSON file', 'error');
+          }
+        };
+        
+        reader.readAsText(file);
+      });
+      
+      // Clear cache button
+      document.getElementById('clear-cache-btn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear the cache? This will not delete your data but may cause temporary loading issues.')) {
+          localStorage.clear();
+          showToast('Cache cleared successfully');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         }
-    </script>
+      });
+      
+      // Backup buttons
+      document.querySelectorAll('.backup-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          try {
+            const response = await fetch('/api/export');
+            const data = await response.json();
+            
+            // Store in localStorage as backup
+            localStorage.setItem('animeBackup', JSON.stringify(data));
+            localStorage.setItem('animeBackupDate', new Date().toISOString());
+            
+            showToast('Backup saved to browser storage');
+          } catch (error) {
+            console.error('Error creating backup:', error);
+            showToast('Failed to create backup', 'error');
+          }
+        });
+      });
+      
+      // Load initial data
+      fetchDashboardData();
+      fetchAnimeList();
+      fetchEpisodes();
+      fetchSchedule();
+      
+      // Check for existing backup in localStorage
+      const existingBackup = localStorage.getItem('animeBackup');
+      const backupDate = localStorage.getItem('animeBackupDate');
+      
+      if (existingBackup && backupDate) {
+        const backupData = JSON.parse(existingBackup);
+        const formattedDate = new Date(backupDate).toLocaleString();
+        
+        // Send backup to server
+        fetch('/api/browser-backup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(backupData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Browser backup status:', data);
+        })
+        .catch(error => {
+          console.error('Error sending browser backup:', error);
+        });
+      }
+    });
+  </script>
 </body>
 </html>
