@@ -75,6 +75,7 @@
       font-weight: 500;
       padding: 0.5rem 1rem;
       transition: all 0.2s ease-in-out;
+      cursor: pointer;
     }
     
     .btn-primary {
@@ -191,6 +192,42 @@
       animation: shimmer 2s infinite;
     }
     
+    /* Improve mobile menu button */
+    .menu-btn {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 24px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      z-index: 50;
+      transition: all 0.3s;
+    }
+    
+    .menu-btn span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: hsl(var(--foreground));
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+    
+    .menu-btn.active span:nth-child(1) {
+      transform: translateY(9px) rotate(45deg);
+    }
+    
+    .menu-btn.active span:nth-child(2) {
+      opacity: 0;
+    }
+    
+    .menu-btn.active span:nth-child(3) {
+      transform: translateY(-9px) rotate(-45deg);
+    }
+    
     @keyframes shimmer {
       100% {
         transform: translateX(100%);
@@ -214,6 +251,59 @@
     
     ::-webkit-scrollbar-thumb:hover {
       background-color: hsl(var(--muted-foreground));
+    }
+    
+    /* Additional responsive styles */
+    @media (max-width: 768px) {
+      .sidebar-active {
+        transform: translateX(0) !important;
+      }
+      
+      .hidden-mobile {
+        display: none;
+      }
+    }
+    
+    /* Loading indicator */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid hsla(var(--foreground), 0.3);
+      border-radius: 50%;
+      border-top-color: hsl(var(--foreground));
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    /* Improved form styles */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Hover effects */
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .nav-link.active {
+      background-color: hsl(var(--secondary));
+      color: hsl(var(--secondary-foreground));
+      font-weight: 600;
     }
   </style>
   
@@ -270,15 +360,25 @@
     };
   </script>
 </head>
-<body class="min-h-screen bg-background flex flex-col">
+<body class="min-h-screen bg-background">
   <!-- Toast container -->
   <div id="toast-container"></div>
+  
+  <!-- Global loading overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-background bg-opacity-75 z-50 flex items-center justify-center hidden">
+    <div class="card p-6 text-center">
+      <div class="loading mx-auto mb-2"></div>
+      <p id="loading-text">Loading...</p>
+    </div>
+  </div>
   
   <!-- Mobile Nav Bar -->
   <header class="md:hidden sticky top-0 z-30 bg-background border-b border-border p-4 flex items-center justify-between">
     <div class="flex items-center">
-      <button id="mobile-menu-toggle" class="mr-2">
-        <i class="ph ph-list text-xl"></i>
+      <button id="mobile-menu-toggle" class="menu-btn mr-2">
+        <span></span>
+        <span></span>
+        <span></span>
       </button>
       <h1 class="text-lg font-semibold">Anime API Admin</h1>
     </div>
@@ -287,9 +387,9 @@
     </button>
   </header>
   
-  <div class="flex flex-1 overflow-hidden">
+  <div class="flex flex-1 min-h-screen">
     <!-- Sidebar -->
-    <aside id="sidebar" class="hidden md:flex flex-col w-64 border-r border-border bg-card fixed md:relative inset-y-0 left-0 z-20 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+    <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-20 w-64 bg-card border-r border-border transform -translate-x-full md:translate-x-0 transition-transform duration-300 h-full flex flex-col">
       <div class="p-4 border-b border-border flex items-center justify-between">
         <h1 class="text-xl font-semibold">Anime API Admin</h1>
         <button id="theme-toggle" class="btn btn-ghost p-1">
@@ -319,7 +419,7 @@
           </li>
           <li>
             <button data-section="episodes" class="nav-link w-full text-left flex items-center p-2 rounded-md hover:bg-secondary text-foreground font-medium">
-              <i class="ph ph-list-bullets mr-2"></i>
+              <i class="ph ph-film-strip mr-2"></i>
               Episodes
             </button>
           </li>
@@ -352,8 +452,11 @@
       </div>
     </aside>
     
+    <!-- Mobile Drawer Backdrop -->
+    <div id="mobile-backdrop" class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 hidden"></div>
+    
     <!-- Main Content -->
-    <main class="flex-1 overflow-auto p-4 md:p-6">
+    <main class="flex-1 overflow-auto p-4 md:p-6 ml-0 md:ml-64">
       <!-- Dashboard Section -->
       <section id="dashboard" class="space-y-6">
         <div class="flex items-center justify-between">
@@ -367,7 +470,7 @@
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="card p-4">
+          <div class="card p-4 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
               <h3 class="text-muted-foreground">Total Anime</h3>
               <i class="ph ph-television text-primary text-xl"></i>
@@ -375,7 +478,7 @@
             <p class="text-2xl font-bold mt-2" id="anime-count">0</p>
           </div>
           
-          <div class="card p-4">
+          <div class="card p-4 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
               <h3 class="text-muted-foreground">Total Episodes</h3>
               <i class="ph ph-film-strip text-primary text-xl"></i>
@@ -383,7 +486,7 @@
             <p class="text-2xl font-bold mt-2" id="episode-count">0</p>
           </div>
           
-          <div class="card p-4">
+          <div class="card p-4 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
               <h3 class="text-muted-foreground">Tagalog Dubs</h3>
               <i class="ph ph-translate text-primary text-xl"></i>
@@ -391,7 +494,7 @@
             <p class="text-2xl font-bold mt-2" id="tagalog-count">0</p>
           </div>
           
-          <div class="card p-4">
+          <div class="card p-4 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
               <h3 class="text-muted-foreground">Scheduled</h3>
               <i class="ph ph-calendar text-primary text-xl"></i>
@@ -415,7 +518,8 @@
                 <tbody id="recent-anime-table">
                   <tr>
                     <td colspan="3" class="py-4 text-center text-muted-foreground">
-                      Loading anime data...
+                      <div class="loading mx-auto"></div>
+                      <p class="mt-2">Loading anime data...</p>
                     </td>
                   </tr>
                 </tbody>
@@ -437,7 +541,8 @@
                 <tbody id="recent-episodes-table">
                   <tr>
                     <td colspan="3" class="py-4 text-center text-muted-foreground">
-                      Loading episode data...
+                      <div class="loading mx-auto"></div>
+                      <p class="mt-2">Loading episode data...</p>
                     </td>
                   </tr>
                 </tbody>
@@ -478,7 +583,8 @@
               <tbody id="anime-table">
                 <tr>
                   <td colspan="5" class="py-4 text-center text-muted-foreground">
-                    Loading anime data...
+                    <div class="loading mx-auto"></div>
+                    <p class="mt-2">Loading anime data...</p>
                   </td>
                 </tr>
               </tbody>
@@ -493,7 +599,7 @@
         
         <div class="card p-6">
           <div class="mb-4">
-            <label for="anime-search-input" class="block text-sm font-medium mb-1">Search AniList</label>
+            <label for="anime-search-input" class="form-label">Search AniList</label>
             <div class="relative">
               <input type="text" id="anime-search-input" placeholder="Search by title..." class="input">
               <button id="search-anime-btn" class="absolute right-1 top-1/2 transform -translate-y-1/2 btn btn-primary py-1 px-2 text-sm">
@@ -575,7 +681,8 @@
               <tbody id="episodes-table">
                 <tr>
                   <td colspan="5" class="py-4 text-center text-muted-foreground">
-                    Loading episode data...
+                    <div class="loading mx-auto"></div>
+                    <p class="mt-2">Loading episode data...</p>
                   </td>
                 </tr>
               </tbody>
@@ -591,35 +698,35 @@
         <div class="card p-6">
           <form id="episode-form">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label for="episode-anime-select" class="block text-sm font-medium mb-1">Select Anime</label>
+              <div class="form-group">
+                <label for="episode-anime-select" class="form-label">Select Anime</label>
                 <select id="episode-anime-select" class="input">
                   <option value="">Select an anime...</option>
                 </select>
               </div>
               
-              <div>
-                <label for="episode-number" class="block text-sm font-medium mb-1">Episode Number</label>
+              <div class="form-group">
+                <label for="episode-number" class="form-label">Episode Number</label>
                 <input type="number" id="episode-number" placeholder="Episode number" class="input" min="1">
               </div>
             </div>
             
-            <div class="mb-4">
-              <label for="episode-title" class="block text-sm font-medium mb-1">Episode Title (Optional)</label>
+            <div class="form-group">
+              <label for="episode-title" class="form-label">Episode Title (Optional)</label>
               <input type="text" id="episode-title" placeholder="Episode title" class="input">
             </div>
             
-            <div class="mb-4">
-              <label for="iframe-src" class="block text-sm font-medium mb-1">Primary Server (iframe src)</label>
+            <div class="form-group">
+              <label for="iframe-src" class="form-label">Primary Server (iframe src)</label>
               <input type="text" id="iframe-src" placeholder="https://example.com/embed/..." class="input">
             </div>
             
-            <div class="mb-4">
-              <label for="server2-url" class="block text-sm font-medium mb-1">Secondary Server URL (Optional)</label>
+            <div class="form-group">
+              <label for="server2-url" class="form-label">Secondary Server URL (Optional)</label>
               <input type="text" id="server2-url" placeholder="https://example.com/video/..." class="input">
             </div>
             
-            <div class="mb-4">
+            <div class="form-group">
               <label class="flex items-center text-sm font-medium">
                 <input type="checkbox" id="episode-has-tagalog" class="mr-2 rounded border-border">
                 Has Tagalog Dub
@@ -654,25 +761,25 @@
           
           <form id="schedule-form">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label for="schedule-anime-select" class="block text-sm font-medium mb-1">Select Anime</label>
+              <div class="form-group">
+                <label for="schedule-anime-select" class="form-label">Select Anime</label>
                 <select id="schedule-anime-select" class="input">
                   <option value="">Select an anime...</option>
                 </select>
               </div>
               
-              <div>
-                <label for="release-date" class="block text-sm font-medium mb-1">Release Date</label>
+              <div class="form-group">
+                <label for="release-date" class="form-label">Release Date</label>
                 <input type="date" id="release-date" class="input">
               </div>
             </div>
             
-            <div class="mb-4">
-              <label for="schedule-notes" class="block text-sm font-medium mb-1">Notes</label>
+            <div class="form-group">
+              <label for="schedule-notes" class="form-label">Notes</label>
               <textarea id="schedule-notes" rows="3" placeholder="Add notes about this release..." class="input"></textarea>
             </div>
             
-            <div class="mb-4">
+            <div class="form-group">
               <label class="flex items-center text-sm font-medium">
                 <input type="checkbox" id="schedule-has-tagalog" class="mr-2 rounded border-border">
                 Will have Tagalog Dub
@@ -706,7 +813,8 @@
               <tbody id="schedule-table">
                 <tr>
                   <td colspan="5" class="py-4 text-center text-muted-foreground">
-                    Loading schedule data...
+                    <div class="loading mx-auto"></div>
+                    <p class="mt-2">Loading schedule data...</p>
                   </td>
                 </tr>
               </tbody>
@@ -771,11 +879,35 @@
     </main>
   </div>
   
-  <!-- Mobile Drawer Backdrop -->
-  <div id="mobile-backdrop" class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 hidden" style="transition: opacity 0.3s;"></div>
-  
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Global variables
+      const API_BASE_URL = ''; // Empty string for same-origin requests
+      let isLoading = false;
+      let animeCache = {};
+      
+      // DOM Elements
+      const sidebar = document.getElementById('sidebar');
+      const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+      const mobileBackdrop = document.getElementById('mobile-backdrop');
+      const sections = document.querySelectorAll('main > section');
+      const navLinks = document.querySelectorAll('.nav-link');
+      const loadingOverlay = document.getElementById('loading-overlay');
+      const loadingText = document.getElementById('loading-text');
+      
+      // Show loading overlay
+      function showLoading(message = 'Loading...') {
+        isLoading = true;
+        loadingText.textContent = message;
+        loadingOverlay.classList.remove('hidden');
+      }
+      
+      // Hide loading overlay
+      function hideLoading() {
+        isLoading = false;
+        loadingOverlay.classList.add('hidden');
+      }
+      
       // Theme Toggle
       const themeToggle = document.getElementById('theme-toggle');
       const themeToggleMobile = document.getElementById('theme-toggle-mobile');
@@ -847,85 +979,29 @@
       }
       
       // Mobile Menu Toggle
-      const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-      const sidebar = document.getElementById('sidebar');
-      const mobileBackdrop = document.getElementById('mobile-backdrop');
-      
       function toggleMobileMenu() {
-        if (sidebar.classList.contains('translate-x-0')) {
-          sidebar.classList.remove('translate-x-0');
-          sidebar.classList.add('-translate-x-full');
-          mobileBackdrop.style.opacity = '0';
-          setTimeout(() => {
-            mobileBackdrop.classList.add('hidden');
-          }, 300);
-        } else {
-          sidebar.classList.remove('-translate-x-full');
-          sidebar.classList.add('translate-x-0');
+        sidebar.classList.toggle('sidebar-active');
+        
+        if (sidebar.classList.contains('sidebar-active')) {
           mobileBackdrop.classList.remove('hidden');
+          mobileMenuToggle.classList.add('active');
           setTimeout(() => {
             mobileBackdrop.style.opacity = '1';
           }, 10);
+        } else {
+          mobileBackdrop.style.opacity = '0';
+          mobileMenuToggle.classList.remove('active');
+          setTimeout(() => {
+            mobileBackdrop.classList.add('hidden');
+          }, 300);
         }
       }
       
       mobileMenuToggle.addEventListener('click', toggleMobileMenu);
       mobileBackdrop.addEventListener('click', toggleMobileMenu);
       
-      // Navigation
-      const sections = document.querySelectorAll('main > section');
-      const navLinks = document.querySelectorAll('.nav-link');
-      
-      function showSection(sectionId) {
-        sections.forEach(section => {
-          section.classList.add('hidden');
-        });
-        
-        const targetSection = document.getElementById(sectionId);
-        if (targetSection) {
-          targetSection.classList.remove('hidden');
-        }
-        
-        // Update active link
-        navLinks.forEach(link => {
-          if (link.dataset.section === sectionId) {
-            link.classList.add('bg-secondary');
-          } else {
-            link.classList.remove('bg-secondary');
-          }
-        });
-        
-        // Close mobile menu after navigation
-        if (window.innerWidth < 768) {
-          toggleMobileMenu();
-        }
-        
-        // Save current section to localStorage
-        localStorage.setItem('currentSection', sectionId);
-      }
-      
-      navLinks.forEach(link => {
-        link.addEventListener('click', function() {
-          showSection(this.dataset.section);
-        });
-      });
-      
-      // Restore last visited section
-      const lastSection = localStorage.getItem('currentSection') || 'dashboard';
-      showSection(lastSection);
-      
-      // Show Add Anime section when Add Anime button is clicked
-      document.getElementById('add-anime-btn').addEventListener('click', function() {
-        showSection('add-anime');
-      });
-      
-      // Show Add Episode section when Add Episode button is clicked
-      document.getElementById('add-episode-btn').addEventListener('click', function() {
-        showSection('add-episode');
-      });
-      
       // Toast Function
-      function showToast(message, type = 'success') {
+      function showToast(message, type = 'success', duration = 3000) {
         const toastContainer = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
@@ -943,45 +1019,100 @@
           toast.classList.add('show');
         }, 10);
         
-        // Remove the toast after 3 seconds
+        // Remove the toast after specified duration
         setTimeout(() => {
           toast.classList.remove('show');
           setTimeout(() => {
-            toastContainer.removeChild(toast);
+            if (toastContainer.contains(toast)) {
+              toastContainer.removeChild(toast);
+            }
           }, 300);
-        }, 3000);
+        }, duration);
+      }
+      
+      // Navigation
+      function showSection(sectionId) {
+        sections.forEach(section => {
+          section.classList.add('hidden');
+        });
+        
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+          targetSection.classList.remove('hidden');
+        }
+        
+        // Update active link
+        navLinks.forEach(link => {
+          if (link.dataset.section === sectionId) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+        
+        // Close mobile menu after navigation on mobile
+        if (window.innerWidth < 768 && sidebar.classList.contains('sidebar-active')) {
+          toggleMobileMenu();
+        }
+        
+        // Save current section to localStorage
+        localStorage.setItem('currentSection', sectionId);
+      }
+      
+      navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          showSection(this.dataset.section);
+        });
+      });
+      
+      // Restore last visited section
+      const lastSection = localStorage.getItem('currentSection') || 'dashboard';
+      showSection(lastSection);
+      
+      // API helper function
+      async function fetchAPI(endpoint, options = {}) {
+        try {
+          const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `Request failed with status ${response.status}`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error(`API Error (${endpoint}):`, error);
+          throw error;
+        }
       }
       
       // Fetch Dashboard Data
       async function fetchDashboardData() {
         try {
-          // Fetch anime count
-          const animeResponse = await fetch('/api/anime');
-          const animeData = await animeResponse.json();
+          // Fetch anime and episodes data in parallel
+          const [animeData, episodesData, scheduledData] = await Promise.all([
+            fetchAPI('/api/anime'),
+            fetchAPI('/api/episodes'),
+            fetchAPI('/api/scheduled')
+          ]);
+          
+          // Update dashboard stats
           document.getElementById('anime-count').textContent = animeData.length;
+          document.getElementById('episode-count').textContent = episodesData.length;
+          document.getElementById('scheduled-count').textContent = scheduledData.length;
           
           // Count tagalog dubs
           const tagalogCount = animeData.filter(anime => anime.hasTagalogDub).length;
           document.getElementById('tagalog-count').textContent = tagalogCount;
-          
-          // Fetch episodes count
-          const episodesResponse = await fetch('/api/episodes');
-          const episodesData = await episodesResponse.json();
-          document.getElementById('episode-count').textContent = episodesData.length;
-          
-          // Fetch scheduled count
-          const scheduledResponse = await fetch('/api/scheduled');
-          const scheduledData = await scheduledResponse.json();
-          document.getElementById('scheduled-count').textContent = scheduledData.length;
           
           // Populate recent anime table
           const recentAnimeTable = document.getElementById('recent-anime-table');
           recentAnimeTable.innerHTML = '';
           
           // Sort anime by date added (newest first)
-          const sortedAnime = [...animeData].sort((a, b) => {
-            return new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0);
-          });
+          const sortedAnime = [...animeData]
+            .filter(anime => anime.dateAdded) // Filter out those without dateAdded
+            .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
           
           const recentAnime = sortedAnime.slice(0, 5);
           
@@ -997,7 +1128,7 @@
             recentAnime.forEach(anime => {
               const episodeCount = episodesData.filter(episode => episode.animeId === anime.id).length;
               const tr = document.createElement('tr');
-              tr.className = 'border-b border-border';
+              tr.className = 'border-b border-border hover:bg-muted/10';
               tr.innerHTML = `
                 <td class="py-2 px-2">
                   <div class="flex items-center">
@@ -1019,9 +1150,9 @@
           recentEpisodesTable.innerHTML = '';
           
           // Sort episodes by date added (newest first)
-          const sortedEpisodes = [...episodesData].sort((a, b) => {
-            return new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0);
-          });
+          const sortedEpisodes = [...episodesData]
+            .filter(episode => episode.dateAdded) // Filter out those without dateAdded
+            .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
           
           const recentEpisodes = sortedEpisodes.slice(0, 5);
           
@@ -1039,41 +1170,18 @@
               const animeInfo = animeData.find(anime => anime.id === episode.animeId) || { title: 'Unknown Anime' };
               
               const tr = document.createElement('tr');
-              tr.className = 'border-b border-border';
+              tr.className = 'border-b border-border hover:bg-muted/10';
               tr.innerHTML = `
                 <td class="py-2 px-2 truncate" style="max-width: 160px;">${animeInfo.title}</td>
                 <td class="py-2 px-2">Episode ${episode.number}</td>
                 <td class="py-2 px-2">${episode.dateAdded ? new Date(episode.dateAdded).toLocaleDateString() : 'Unknown'}</td>
               `;
               recentEpisodesTable.appendChild(tr);
-            }
+            });
           }
           
           // Populate anime selects
-          const animeSelects = document.querySelectorAll('#episode-anime-select, #schedule-anime-select');
-          animeSelects.forEach(select => {
-            // Save current value
-            const currentValue = select.value;
-            
-            // Clear options except the first one
-            select.innerHTML = '<option value="">Select an anime...</option>';
-            
-            // Sort anime by title
-            const sortedForSelect = [...animeData].sort((a, b) => a.title.localeCompare(b.title));
-            
-            // Add anime options
-            sortedForSelect.forEach(anime => {
-              const option = document.createElement('option');
-              option.value = anime.id;
-              option.textContent = anime.title;
-              select.appendChild(option);
-            });
-            
-            // Restore selected value if it exists
-            if (currentValue) {
-              select.value = currentValue;
-            }
-          });
+          populateAnimeSelects(animeData);
           
         } catch (error) {
           console.error('Error fetching dashboard data:', error);
@@ -1081,18 +1189,52 @@
         }
       }
       
+      // Populate anime select dropdowns
+      function populateAnimeSelects(animeData) {
+        const animeSelects = document.querySelectorAll('#episode-anime-select, #schedule-anime-select');
+        animeSelects.forEach(select => {
+          // Save current value
+          const currentValue = select.value;
+          
+          // Clear options except the first one
+          select.innerHTML = '<option value="">Select an anime...</option>';
+          
+          // Sort anime by title
+          const sortedForSelect = [...animeData].sort((a, b) => a.title.localeCompare(b.title));
+          
+          // Add anime options
+          sortedForSelect.forEach(anime => {
+            const option = document.createElement('option');
+            option.value = anime.id;
+            option.textContent = anime.title;
+            select.appendChild(option);
+          });
+          
+          // Restore selected value if it exists
+          if (currentValue) {
+            select.value = currentValue;
+          }
+        });
+      }
+      
       // Fetch and populate anime list table
       async function fetchAnimeList() {
         try {
           const animeTable = document.getElementById('anime-table');
-          animeTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Loading anime data...</td></tr>';
+          animeTable.innerHTML = `
+            <tr>
+              <td colspan="5" class="py-4 text-center text-muted-foreground">
+                <div class="loading mx-auto"></div>
+                <p class="mt-2">Loading anime data...</p>
+              </td>
+            </tr>
+          `;
           
-          const response = await fetch('/api/anime');
-          const animeData = await response.json();
-          
-          // Get episode counts for each anime
-          const episodesResponse = await fetch('/api/episodes');
-          const episodesData = await episodesResponse.json();
+          // Fetch anime and episodes data in parallel
+          const [animeData, episodesData] = await Promise.all([
+            fetchAPI('/api/anime'),
+            fetchAPI('/api/episodes')
+          ]);
           
           // Process anime data
           animeTable.innerHTML = '';
@@ -1102,11 +1244,14 @@
             return;
           }
           
-          animeData.forEach(anime => {
+          // Sort anime by title
+          const sortedAnime = [...animeData].sort((a, b) => a.title.localeCompare(b.title));
+          
+          sortedAnime.forEach(anime => {
             const episodeCount = episodesData.filter(episode => episode.animeId === anime.id).length;
             
             const tr = document.createElement('tr');
-            tr.className = 'border-b border-border';
+            tr.className = 'border-b border-border hover:bg-muted/10';
             tr.innerHTML = `
               <td class="py-3 px-4">
                 <div class="flex items-center">
@@ -1119,7 +1264,7 @@
                   </div>
                 </div>
               </td>
-              <td class="py-3 px-4 hidden sm:table-cell">${episodeCount} / ${anime.episodeCount}</td>
+              <td class="py-3 px-4 hidden sm:table-cell">${episodeCount} / ${anime.episodeCount || '?'}</td>
               <td class="py-3 px-4 hidden md:table-cell">${anime.status || 'Unknown'}</td>
               <td class="py-3 px-4 hidden lg:table-cell">
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs ${anime.hasTagalogDub ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}">
@@ -1148,9 +1293,14 @@
           viewEpisodesBtns.forEach(btn => {
             btn.addEventListener('click', function() {
               const animeId = this.dataset.id;
+              
               // Navigate to episodes section and filter for this anime
               showSection('episodes');
-              // TODO: Implement filtering
+              
+              // Set the filter value to the anime title
+              const animeTitle = animeData.find(a => a.id === animeId)?.title || '';
+              document.getElementById('episode-search').value = animeTitle;
+              document.getElementById('episode-search').dispatchEvent(new Event('input'));
             });
           });
           
@@ -1158,7 +1308,6 @@
           addEpisodeForAnimeBtns.forEach(btn => {
             btn.addEventListener('click', function() {
               const animeId = this.dataset.id;
-              const animeTitle = this.dataset.title;
               
               // Navigate to add episode section
               showSection('add-episode');
@@ -1175,21 +1324,24 @@
               
               if (confirm('Are you sure you want to delete this anime? This will also delete all episodes associated with it.')) {
                 try {
-                  const response = await fetch(`/api/anime/${animeId}`, {
+                  showLoading('Deleting anime...');
+                  
+                  await fetchAPI(`/api/anime/${animeId}`, {
                     method: 'DELETE'
                   });
                   
-                  if (response.ok) {
-                    showToast('Anime deleted successfully');
-                    fetchAnimeList();
-                    fetchDashboardData();
-                  } else {
-                    const data = await response.json();
-                    showToast(data.error || 'Failed to delete anime', 'error');
-                  }
+                  hideLoading();
+                  showToast('Anime deleted successfully');
+                  
+                  // Refresh data
+                  await Promise.all([
+                    fetchAnimeList(),
+                    fetchDashboardData(),
+                    fetchEpisodes()
+                  ]);
                 } catch (error) {
-                  console.error('Error deleting anime:', error);
-                  showToast('Failed to delete anime', 'error');
+                  hideLoading();
+                  showToast(error.message || 'Failed to delete anime', 'error');
                 }
               }
             });
@@ -1225,16 +1377,19 @@
       async function fetchEpisodes() {
         try {
           const episodesTable = document.getElementById('episodes-table');
-          episodesTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Loading episode data...</td></tr>';
+          episodesTable.innerHTML = `
+            <tr>
+              <td colspan="5" class="py-4 text-center text-muted-foreground">
+                <div class="loading mx-auto"></div>
+                <p class="mt-2">Loading episode data...</p>
+              </td>
+            </tr>
+          `;
           
-          const [episodesResponse, animeResponse] = await Promise.all([
-            fetch('/api/episodes'),
-            fetch('/api/anime')
-          ]);
-          
+          // Fetch anime and episodes data in parallel
           const [episodesData, animeData] = await Promise.all([
-            episodesResponse.json(),
-            animeResponse.json()
+            fetchAPI('/api/episodes'),
+            fetchAPI('/api/anime')
           ]);
           
           // Create a map of anime IDs to titles for faster lookup
@@ -1270,7 +1425,7 @@
             const animeInfo = animeMap[episode.animeId] || { title: 'Unknown Anime', thumbnail: 'https://via.placeholder.com/80' };
             
             const tr = document.createElement('tr');
-            tr.className = 'border-b border-border';
+            tr.className = 'border-b border-border hover:bg-muted/10';
             tr.innerHTML = `
               <td class="py-3 px-4">
                 <div class="flex items-center">
@@ -1293,7 +1448,7 @@
               </td>
               <td class="py-3 px-4 text-right">
                 <div class="flex items-center justify-end space-x-2">
-                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-foreground edit-episode-btn" data-id="${episode.id}" title="Edit Episode">
+                  <button class="btn btn-ghost p-1 text-muted-foreground hover:text-foreground edit-episode-btn" data-id="${episode.id}" data-anime-id="${episode.animeId}" data-number="${episode.number}" data-title="${episode.title || ''}" data-iframe="${episode.iframeSrc || ''}" data-server2="${episode.server2Url || ''}" data-tagalog="${episode.hasTagalogDub ? 'true' : 'false'}" title="Edit Episode">
                     <i class="ph ph-pencil"></i>
                   </button>
                   <button class="btn btn-ghost p-1 text-muted-foreground hover:text-destructive delete-episode-btn" data-id="${episode.id}" title="Delete Episode">
@@ -1306,6 +1461,37 @@
           });
           
           // Add event listeners to action buttons
+          const editEpisodeBtns = document.querySelectorAll('.edit-episode-btn');
+          editEpisodeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+              // Get episode data from data attributes
+              const episodeId = this.dataset.id;
+              const animeId = this.dataset.animeId;
+              const number = this.dataset.number;
+              const title = this.dataset.title;
+              const iframeSrc = this.dataset.iframe;
+              const server2Url = this.dataset.server2;
+              const hasTagalogDub = this.dataset.tagalog === 'true';
+              
+              // Navigate to add episode section
+              showSection('add-episode');
+              
+              // Populate form with episode data
+              document.getElementById('episode-anime-select').value = animeId;
+              document.getElementById('episode-number').value = number;
+              document.getElementById('episode-title').value = title;
+              document.getElementById('iframe-src').value = iframeSrc;
+              document.getElementById('server2-url').value = server2Url;
+              document.getElementById('episode-has-tagalog').checked = hasTagalogDub;
+              
+              // Update form submit button to show we're editing
+              const submitBtn = document.querySelector('#episode-form button[type="submit"]');
+              submitBtn.innerHTML = '<i class="ph ph-floppy-disk mr-2"></i> Update Episode';
+              submitBtn.dataset.mode = 'edit';
+              submitBtn.dataset.id = episodeId;
+            });
+          });
+          
           const deleteEpisodeBtns = document.querySelectorAll('.delete-episode-btn');
           deleteEpisodeBtns.forEach(btn => {
             btn.addEventListener('click', async function() {
@@ -1313,21 +1499,23 @@
               
               if (confirm('Are you sure you want to delete this episode?')) {
                 try {
-                  const response = await fetch(`/api/episodes/${episodeId}`, {
+                  showLoading('Deleting episode...');
+                  
+                  await fetchAPI(`/api/episodes/${episodeId}`, {
                     method: 'DELETE'
                   });
                   
-                  if (response.ok) {
-                    showToast('Episode deleted successfully');
-                    fetchEpisodes();
-                    fetchDashboardData();
-                  } else {
-                    const data = await response.json();
-                    showToast(data.error || 'Failed to delete episode', 'error');
-                  }
+                  hideLoading();
+                  showToast('Episode deleted successfully');
+                  
+                  // Refresh data
+                  await Promise.all([
+                    fetchEpisodes(),
+                    fetchDashboardData()
+                  ]);
                 } catch (error) {
-                  console.error('Error deleting episode:', error);
-                  showToast('Failed to delete episode', 'error');
+                  hideLoading();
+                  showToast(error.message || 'Failed to delete episode', 'error');
                 }
               }
             });
@@ -1365,21 +1553,27 @@
       async function fetchSchedule() {
         try {
           const scheduleTable = document.getElementById('schedule-table');
-          scheduleTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">Loading schedule data...</td></tr>';
+          scheduleTable.innerHTML = `
+            <tr>
+              <td colspan="5" class="py-4 text-center text-muted-foreground">
+                <div class="loading mx-auto"></div>
+                <p class="mt-2">Loading schedule data...</p>
+              </td>
+            </tr>
+          `;
           
-          const response = await fetch('/api/scheduled');
-          const scheduleData = await response.json();
+          const scheduledData = await fetchAPI('/api/scheduled');
           
           // Process schedule data
           scheduleTable.innerHTML = '';
           
-          if (scheduleData.length === 0) {
+          if (scheduledData.length === 0) {
             scheduleTable.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-muted-foreground">No scheduled releases found</td></tr>';
             return;
           }
           
           // Sort by release date (upcoming first)
-          const sortedSchedule = [...scheduleData].sort((a, b) => {
+          const sortedSchedule = [...scheduledData].sort((a, b) => {
             return new Date(a.releaseDate) - new Date(b.releaseDate);
           });
           
@@ -1388,7 +1582,7 @@
             const isUpcoming = releaseDate > new Date();
             
             const tr = document.createElement('tr');
-            tr.className = 'border-b border-border';
+            tr.className = 'border-b border-border hover:bg-muted/10';
             tr.innerHTML = `
               <td class="py-3 px-4">
                 <div class="flex items-center">
@@ -1438,21 +1632,23 @@
               
               if (confirm('Are you sure you want to delete this scheduled item?')) {
                 try {
-                  const response = await fetch(`/api/scheduled/${scheduleId}`, {
+                  showLoading('Deleting scheduled item...');
+                  
+                  await fetchAPI(`/api/scheduled/${scheduleId}`, {
                     method: 'DELETE'
                   });
                   
-                  if (response.ok) {
-                    showToast('Scheduled item deleted successfully');
-                    fetchSchedule();
-                    fetchDashboardData();
-                  } else {
-                    const data = await response.json();
-                    showToast(data.error || 'Failed to delete scheduled item', 'error');
-                  }
+                  hideLoading();
+                  showToast('Scheduled item deleted successfully');
+                  
+                  // Refresh data
+                  await Promise.all([
+                    fetchSchedule(),
+                    fetchDashboardData()
+                  ]);
                 } catch (error) {
-                  console.error('Error deleting scheduled item:', error);
-                  showToast('Failed to delete scheduled item', 'error');
+                  hideLoading();
+                  showToast(error.message || 'Failed to delete scheduled item', 'error');
                 }
               }
             });
@@ -1479,10 +1675,36 @@
         }
       }
       
+      // Show Add Anime section when Add Anime button is clicked
+      document.getElementById('add-anime-btn').addEventListener('click', function() {
+        showSection('add-anime');
+      });
+      
+      // Show Add Episode section when Add Episode button is clicked
+      document.getElementById('add-episode-btn').addEventListener('click', function() {
+        showSection('add-episode');
+        
+        // Reset the form to default state
+        document.getElementById('episode-form').reset();
+        
+        // Update form submit button to show we're adding
+        const submitBtn = document.querySelector('#episode-form button[type="submit"]');
+        submitBtn.innerHTML = '<i class="ph ph-plus-circle mr-2"></i> Add Episode';
+        submitBtn.dataset.mode = 'add';
+        delete submitBtn.dataset.id;
+      });
+      
       // Refresh stats button
-      document.querySelector('.refresh-stats-btn').addEventListener('click', function() {
-        fetchDashboardData();
-        showToast('Dashboard data refreshed');
+      document.querySelector('.refresh-stats-btn').addEventListener('click', async function() {
+        try {
+          showLoading('Refreshing dashboard data...');
+          await fetchDashboardData();
+          hideLoading();
+          showToast('Dashboard data refreshed');
+        } catch (error) {
+          hideLoading();
+          showToast('Error refreshing dashboard data', 'error');
+        }
       });
       
       // Anime search functionality (AniList)
@@ -1496,12 +1718,14 @@
         }
         
         try {
+          showLoading('Searching for anime...');
+          
           document.getElementById('search-results').classList.remove('hidden');
           const searchResultsContainer = document.getElementById('search-results-container');
-          searchResultsContainer.innerHTML = '<div class="p-4 text-center text-muted-foreground">Searching...</div>';
           
-          const response = await fetch(`/api/search?query=${encodeURIComponent(searchTerm)}`);
-          const searchResults = await response.json();
+          const searchResults = await fetchAPI(`/api/search?query=${encodeURIComponent(searchTerm)}`);
+          
+          hideLoading();
           
           if (searchResults.length === 0) {
             searchResultsContainer.innerHTML = '<div class="p-4 text-center text-muted-foreground">No results found</div>';
@@ -1512,7 +1736,7 @@
           
           searchResults.forEach(anime => {
             const card = document.createElement('div');
-            card.className = 'card overflow-hidden';
+            card.className = 'card overflow-hidden card-hover';
             card.innerHTML = `
               <div class="relative pb-[140%]">
                 <img src="${anime.thumbnail || 'https://via.placeholder.com/225x320'}" alt="${anime.title}" class="absolute inset-0 w-full h-full object-cover">
@@ -1539,12 +1763,15 @@
               const animeId = this.dataset.id;
               
               try {
+                showLoading('Loading anime details...');
+                
                 document.getElementById('anime-form-container').classList.remove('hidden');
                 document.getElementById('search-results').classList.add('hidden');
                 
                 // Fetch detailed anime info
-                const response = await fetch(`/api/anime/${animeId}`);
-                const animeData = await response.json();
+                const animeData = await fetchAPI(`/api/anime/${animeId}`);
+                
+                hideLoading();
                 
                 // Populate preview
                 document.getElementById('preview-image').src = animeData.thumbnail || 'https://via.placeholder.com/225x320';
@@ -1562,6 +1789,7 @@
                 document.getElementById('submit-add-anime').dataset.id = animeId;
                 
               } catch (error) {
+                hideLoading();
                 console.error('Error fetching anime details:', error);
                 showToast('Failed to fetch anime details', 'error');
               }
@@ -1569,6 +1797,7 @@
           });
           
         } catch (error) {
+          hideLoading();
           console.error('Error searching anime:', error);
           document.getElementById('search-results-container').innerHTML = '<div class="p-4 text-center text-muted-foreground">Error searching anime</div>';
           showToast('Failed to search anime', 'error');
@@ -1586,8 +1815,15 @@
         const animeId = this.dataset.id;
         const hasTagalogDub = document.getElementById('has-tagalog-dub').checked;
         
+        if (!animeId) {
+          showToast('No anime selected', 'error');
+          return;
+        }
+        
         try {
-          const response = await fetch('/api/anime', {
+          showLoading('Adding anime to library...');
+          
+          const response = await fetchAPI('/api/anime', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -1598,26 +1834,24 @@
             })
           });
           
-          if (response.ok) {
-            const data = await response.json();
-            showToast(`Added ${data.title} to library`);
-            
-            // Reset form
-            document.getElementById('anime-search-input').value = '';
-            document.getElementById('has-tagalog-dub').checked = false;
-            document.getElementById('anime-form-container').classList.add('hidden');
-            document.getElementById('search-results').classList.add('hidden');
-            
-            // Refresh data
-            fetchAnimeList();
-            fetchDashboardData();
-          } else {
-            const data = await response.json();
-            showToast(data.error || 'Failed to add anime', 'error');
-          }
+          hideLoading();
+          showToast(`Added ${response.title} to library`);
+          
+          // Reset form
+          document.getElementById('anime-search-input').value = '';
+          document.getElementById('has-tagalog-dub').checked = false;
+          document.getElementById('anime-form-container').classList.add('hidden');
+          document.getElementById('search-results').classList.add('hidden');
+          
+          // Refresh data
+          await Promise.all([
+            fetchAnimeList(),
+            fetchDashboardData()
+          ]);
+          
         } catch (error) {
-          console.error('Error adding anime:', error);
-          showToast('Failed to add anime', 'error');
+          hideLoading();
+          showToast(error.message || 'Failed to add anime', 'error');
         }
       });
       
@@ -1648,37 +1882,69 @@
         }
         
         try {
-          const response = await fetch('/api/episodes', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              animeId,
-              number: parseInt(number),
-              title,
-              iframeSrc,
-              server2Url,
-              hasTagalogDub
-            })
-          });
+          const submitBtn = document.querySelector('#episode-form button[type="submit"]');
+          const isEdit = submitBtn.dataset.mode === 'edit';
+          const episodeId = submitBtn.dataset.id;
           
-          if (response.ok) {
-            showToast('Episode added successfully');
+          showLoading(isEdit ? 'Updating episode...' : 'Adding episode...');
+          
+          if (isEdit && episodeId) {
+            // Update existing episode
+            await fetchAPI(`/api/episodes/${episodeId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                animeId,
+                number: parseInt(number),
+                title,
+                iframeSrc,
+                server2Url,
+                hasTagalogDub
+              })
+            });
             
-            // Reset form
-            this.reset();
-            
-            // Refresh data
-            fetchEpisodes();
-            fetchDashboardData();
+            hideLoading();
+            showToast('Episode updated successfully');
           } else {
-            const data = await response.json();
-            showToast(data.error || 'Failed to add episode', 'error');
+            // Add new episode
+            await fetchAPI('/api/episodes', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                animeId,
+                number: parseInt(number),
+                title,
+                iframeSrc,
+                server2Url,
+                hasTagalogDub
+              })
+            });
+            
+            hideLoading();
+            showToast('Episode added successfully');
           }
+          
+          // Reset form
+          this.reset();
+          
+          // Reset button state
+          submitBtn.innerHTML = '<i class="ph ph-plus-circle mr-2"></i> Add Episode';
+          submitBtn.dataset.mode = 'add';
+          delete submitBtn.dataset.id;
+          
+          // Refresh data
+          await Promise.all([
+            fetchEpisodes(),
+            fetchDashboardData()
+          ]);
+          
         } catch (error) {
-          console.error('Error adding episode:', error);
-          showToast('Failed to add episode', 'error');
+          hideLoading();
+          showToast(error.message || 'Failed to save episode', 'error');
         }
       });
       
@@ -1712,7 +1978,9 @@
         }
         
         try {
-          const response = await fetch('/api/scheduled', {
+          showLoading('Adding to schedule...');
+          
+          await fetchAPI('/api/scheduled', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -1725,31 +1993,31 @@
             })
           });
           
-          if (response.ok) {
-            showToast('Added to schedule successfully');
-            
-            // Reset form
-            this.reset();
-            document.getElementById('add-schedule-form').style.display = 'none';
-            
-            // Refresh data
-            fetchSchedule();
-            fetchDashboardData();
-          } else {
-            const data = await response.json();
-            showToast(data.error || 'Failed to add to schedule', 'error');
-          }
+          hideLoading();
+          showToast('Added to schedule successfully');
+          
+          // Reset form
+          this.reset();
+          document.getElementById('add-schedule-form').style.display = 'none';
+          
+          // Refresh data
+          await Promise.all([
+            fetchSchedule(),
+            fetchDashboardData()
+          ]);
+          
         } catch (error) {
-          console.error('Error adding to schedule:', error);
-          showToast('Failed to add to schedule', 'error');
+          hideLoading();
+          showToast(error.message || 'Failed to add to schedule', 'error');
         }
       });
       
       // Export data button
       document.querySelector('.export-btn').addEventListener('click', async function() {
         try {
-          const response = await fetch('/api/export');
-          const data = await response.json();
+          showLoading('Exporting data...');
+          
+          const data = await fetchAPI('/api/export');
           
           // Create a JSON blob and download it
           const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1763,8 +2031,10 @@
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
           
+          hideLoading();
           showToast('Data exported successfully');
         } catch (error) {
+          hideLoading();
           console.error('Error exporting data:', error);
           showToast('Failed to export data', 'error');
         }
@@ -1789,7 +2059,9 @@
             
             if (confirm(`Are you sure you want to import this data? This will overwrite your current data.\n\nAnime: ${data.anime.length}\nEpisodes: ${data.episodes.length}\nScheduled: ${data.scheduled ? data.scheduled.length : 0}`)) {
               try {
-                const response = await fetch('/api/import', {
+                showLoading('Importing data...');
+                
+                const result = await fetchAPI('/api/import', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'
@@ -1797,22 +2069,19 @@
                   body: JSON.stringify(data)
                 });
                 
-                if (response.ok) {
-                  const result = await response.json();
-                  showToast(`Data imported successfully! Anime: ${result.counts.anime}, Episodes: ${result.counts.episodes}`);
-                  
-                  // Refresh all data
-                  fetchDashboardData();
-                  fetchAnimeList();
-                  fetchEpisodes();
-                  fetchSchedule();
-                } else {
-                  const errorData = await response.json();
-                  showToast(errorData.error || 'Failed to import data', 'error');
-                }
+                hideLoading();
+                showToast(`Data imported successfully! Anime: ${result.counts.anime}, Episodes: ${result.counts.episodes}`);
+                
+                // Refresh all data
+                await Promise.all([
+                  fetchDashboardData(),
+                  fetchAnimeList(),
+                  fetchEpisodes(),
+                  fetchSchedule()
+                ]);
               } catch (error) {
-                console.error('Error importing data:', error);
-                showToast('Failed to import data', 'error');
+                hideLoading();
+                showToast(error.message || 'Failed to import data', 'error');
               }
             }
           } catch (error) {
@@ -1839,51 +2108,78 @@
       document.querySelectorAll('.backup-btn').forEach(btn => {
         btn.addEventListener('click', async function() {
           try {
-            const response = await fetch('/api/export');
-            const data = await response.json();
+            showLoading('Creating backup...');
+            
+            const data = await fetchAPI('/api/export');
             
             // Store in localStorage as backup
             localStorage.setItem('animeBackup', JSON.stringify(data));
             localStorage.setItem('animeBackupDate', new Date().toISOString());
             
+            hideLoading();
             showToast('Backup saved to browser storage');
           } catch (error) {
+            hideLoading();
             console.error('Error creating backup:', error);
             showToast('Failed to create backup', 'error');
           }
         });
       });
       
+      // Search input on Enter key
+      document.getElementById('anime-search-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          document.getElementById('search-anime-btn').click();
+        }
+      });
+      
       // Load initial data
-      fetchDashboardData();
-      fetchAnimeList();
-      fetchEpisodes();
-      fetchSchedule();
-      
-      // Check for existing backup in localStorage
-      const existingBackup = localStorage.getItem('animeBackup');
-      const backupDate = localStorage.getItem('animeBackupDate');
-      
-      if (existingBackup && backupDate) {
-        const backupData = JSON.parse(existingBackup);
-        const formattedDate = new Date(backupDate).toLocaleString();
-        
-        // Send backup to server
-        fetch('/api/browser-backup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(backupData)
-        })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Browser backup status:', data);
-        })
-        .catch(error => {
-          console.error('Error sending browser backup:', error);
-        });
+      async function initializeApp() {
+        try {
+          showLoading('Loading data...');
+          
+          // Load data in parallel
+          await Promise.all([
+            fetchDashboardData(),
+            fetchAnimeList(),
+            fetchEpisodes(),
+            fetchSchedule()
+          ]);
+          
+          hideLoading();
+          
+          // Check for existing backup in localStorage
+          const existingBackup = localStorage.getItem('animeBackup');
+          const backupDate = localStorage.getItem('animeBackupDate');
+          
+          if (existingBackup && backupDate) {
+            try {
+              const backupData = JSON.parse(existingBackup);
+              const formattedDate = new Date(backupDate).toLocaleString();
+              
+              console.log(`Found local backup from ${formattedDate}`);
+              
+              // Send backup to server
+              await fetch('/api/browser-backup', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(backupData)
+              });
+            } catch (error) {
+              console.error('Error processing browser backup:', error);
+            }
+          }
+        } catch (error) {
+          hideLoading();
+          console.error('Error initializing app:', error);
+          showToast('Failed to load data. Please try refreshing the page.', 'error');
+        }
       }
+      
+      // Initialize the app
+      initializeApp();
     });
   </script>
 </body>
